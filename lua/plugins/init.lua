@@ -7,10 +7,13 @@ require("plugins.mason").setup()
 require("plugins.treesitter").setup()
 require("plugins.lsp").setup()
 require("plugins.blink").setup()
+require("plugins.lsp-markdown-fix").setup()
+require("plugins.render-markdown").setup()
 require("plugins.conform").setup()
 require("plugins.lint").setup()
 require("plugins.dap").setup()
 require("plugins.overseer").setup()
+require("plugins.toggleterm").setup()
 
 -- AI
 require("plugins.copilot").setup()
@@ -36,6 +39,7 @@ require("plugins.indent").setup()
 require("plugins.lualine").setup()
 require("plugins.bufferline").setup()
 require("plugins.neotree").setup()
+require("plugins.auto-session").setup()
 
 -- Editing QoL
 require("plugins.surround").setup()

@@ -25,4 +25,21 @@ return {
     local _ = dap -- adapter registration handled by dap-python
   end,
   mason = { "basedpyright", "ruff", "debugpy" },
+  setup = function()
+    -- Activate the project's virtualenv in every new terminal (old-config
+    -- pattern, convention-based: ./.venv or ./venv). Skipped when the shell
+    -- already runs inside a venv.
+    require("plugins.toggleterm").register_on_create(function(term)
+      if vim.env.VIRTUAL_ENV then
+        return
+      end
+      for _, dir in ipairs({ ".venv", "venv" }) do
+        local activate = vim.fs.joinpath(vim.fn.getcwd(), dir, "bin", "activate")
+        if vim.fn.filereadable(activate) == 1 then
+          vim.api.nvim_chan_send(term.job_id, "source " .. activate .. "\n")
+          return
+        end
+      end
+    end)
+  end,
 }

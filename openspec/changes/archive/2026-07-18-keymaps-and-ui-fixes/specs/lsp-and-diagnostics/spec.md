@@ -1,16 +1,6 @@
-# lsp-and-diagnostics Specification
+# lsp-and-diagnostics Delta
 
-## Purpose
-TBD - created by syncing change setup-nvim-config. Update Purpose after archive.
-
-## Requirements
-
-### Requirement: LSP servers are enabled natively
-The configuration SHALL enable LSP servers exclusively through `vim.lsp.config()` and `vim.lsp.enable()`, using nvim-lspconfig only as the source of default server definitions. Completion capabilities from blink.cmp SHALL be applied globally via `vim.lsp.config('*', ...)`.
-
-#### Scenario: Server attaches with capabilities
-- **WHEN** a buffer whose filetype matches an enabled server is opened
-- **THEN** the server attaches and its capabilities include blink.cmp's completion capabilities
+## MODIFIED Requirements
 
 ### Requirement: LSP keymaps on attach
 The configuration SHALL define buffer-local keymaps in an `LspAttach` autocmd for: go-to-definition, references, hover, rename, and code action, each with a `desc` for which-key. Signature help SHALL NOT be mapped in insert mode on attach — it is owned by blink.cmp's completion signature window and its `<C-k>` toggle — leaving `<C-s>` free for saving.
@@ -34,12 +24,7 @@ The configuration SHALL render LSP hover documentation as formatted markdown usi
 - **WHEN** hover docs arrive from pyright containing `\\*\\*bold\\*\\*` and `&nbsp;` entities
 - **THEN** the float shows bold text and plain spaces, not the escape sequences
 
-### Requirement: Diagnostics are configured natively
-The configuration SHALL configure `vim.diagnostic` with virtual text (or virtual lines for the current line), severity-distinguished signs, and keymaps to navigate diagnostics and open the float.
-
-#### Scenario: Diagnostic display
-- **WHEN** a server publishes diagnostics for a buffer
-- **THEN** signs and virtual text render, and `]d`/`[d` jump between diagnostics
+## ADDED Requirements
 
 ### Requirement: Diagnostics insert-mode refresh toggle
 The configuration SHALL default to refreshing diagnostics only after leaving insert mode (`update_in_insert = false`) and SHALL provide a toggle keymap that switches to live refresh while typing, with a notification of the new state. The toggle applies immediately without restart.

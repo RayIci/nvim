@@ -58,10 +58,12 @@ lua/langs/<lang>.lua      drop-in language packs
 
 ## Workspace persistence (plugin-free)
 
-Per project (cwd): on exit the config saves a `:mksession` session, all DAP breakpoints
-(line/condition/log), and bufferline pins to `stdpath('state')`. Reopening a single file
-restores its breakpoints immediately; `<leader>qs` (or `:WorkspaceRestore`) restores the
-whole session — buffers, layout, pins, breakpoints.
+Per project (cwd): auto-session saves the session automatically on exit and restores it
+automatically when Neovim starts with no file arguments (buffers, layout, and bufferline
+pins — pins ride in the session via the `globals` sessionoption plus a post-restore
+re-sync). Neo-tree's expanded folders and open/closed state persist beside the session
+and are reapplied on restore. DAP breakpoints (line/condition/log) persist separately to
+`stdpath('state')` via the workspace module and reappear per file on open, session or not.
 
 ## Plugin updates
 
@@ -72,17 +74,23 @@ to discard. `nvim-pack-lock.json` is committed; treat it like a lockfile.
 
 | Prefix | Group |
 |---|---|
-| `<leader>f` | find: files `ff`, grep `fg`, buffers `fb`, recent `fr`, diagnostics `fd`, TODOs `ft`, resume `f.` |
+| `<leader>f` | find: files `<leader><leader>`, resume `ff`, grep `fg`, buffers `fb`, recent `fr`, diagnostics `fd`, TODOs `ft`, notifications `fn` |
 | `<leader>g` | git: lazygit `gg`, stage hunk `gs`, reset `gr`, preview `gp`, blame `gb`, commit msg (in gitcommit) `gm` |
-| `<leader>d` | debug: breakpoint `db`, conditional `dB`, continue `dc`, step `do/di/dO`, UI `du`, eval `de` |
+| `<leader>d` | debug: continue `dc`/`F5`, breakpoint `dd`/`B`, groups: breakpoints `db*`, step `ds*` (+`F9/F10/F11`), windows `dw*`, UI `du*` (toggle `duu`), REPL `dr*`, sessions `dS*`, launch `dl*`, eval `de/dE`, hover `dh`, virtual text toggle `dv` (persisted) |
 | `<leader>c` | code: format `cf`, diagnostics float `cd`, inlay hints `ci` (LSP: `gd`, `grr`, `grn`, `gra`, `K`) |
-| `<leader>b` | buffers: pin `bp`, close others `bo`, delete `bd` (cycle: `S-h`/`S-l`) |
+| `<leader>b` | buffers: pin `bp`, close others `bo`, delete `bd`/`xw`, close all `xa` / others `xA` (keep pinned+unsaved; cycle: `Tab`/`S-Tab`, `S-h`/`S-l`) |
 | `<leader>o` | tasks: run `or`, list `ot` (.vscode/tasks.json supported) |
 | `<leader>x` | panels: diagnostics `xx`, buffer `xb`, quickfix `xq`, TODOs `xt` |
-| `<leader>u` | ui: theme `ut`, rainbow toggle `ur`, format-on-save `uf`, AI toggle `ua`, undotree `uu` |
+| `<leader>u` | ui: theme `ut`, rainbow toggle `ur`, format-on-save `uf`, AI toggle `ua`, undotree `uu`, live diagnostics `ud` (persisted; default: open/save/insert-leave) |
 | `<leader>a` | ai: chat `aa`, explain `ae`, review `ar` |
 | `<leader>s` | replace: project `sr`, word `sw` |
-| `<leader>q` | session: restore `qs` |
+| `<leader>q` | session (auto-session; auto-saves on exit, auto-restores on plain `nvim`): save `qs`, restore `qr`, search `ql`, delete `qd`, toggle autosave `qt` |
+| `<leader>T` | terminal (toggleterm, `<C-t>` toggles / `2<C-t>` numbered): toggle `Tt`, horizontal/vertical/float `Th/Tv/Tf`, all `Ta`, 1-4 `T1-T4`, name `Tn`, rename `Tr`, send line/selection `Ts`; in terminal: `jk`/`<C-\>` to normal mode |
 
 Editing: multi-cursor `<C-n>` (skip with `q`), flash jump `s`, surround `ys/cs/ds`,
-references `]]`/`[[`, hunks `]h`/`[h`, inline AI accept `<M-l>`, cycle `<M-]>`/`<M-[>`.
+references `]]`/`[[`, hunks `]h`/`[h`, inline AI: accept line `<C-t>`, word `<C-w>`,
+all `<M-l>`, dismiss `<C-]>`, cycle `<M-]>`/`<M-[>` (`<C-c>` acts as `<Esc>` so ghost
+text always clears).
+Save `<C-s>` (normal+insert), save without formatting `<C-a>`, clear search `<C-x>`/`<Esc>`, tmux-aware window
+navigation `<C-h/j/k/l>` (vim-tmux-navigator). Cmdline renders at the bottom row;
+macro recording shows a red `REC @reg` indicator in the statusline.

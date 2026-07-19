@@ -6,11 +6,19 @@ local map = vim.keymap.set
 -- Clear search highlight
 map("n", "<Esc>", "<cmd>nohlsearch<cr>", { desc = "Clear search highlight" })
 
--- Better window navigation
-map("n", "<C-h>", "<C-w>h", { desc = "Focus left window" })
-map("n", "<C-j>", "<C-w>j", { desc = "Focus lower window" })
-map("n", "<C-k>", "<C-w>k", { desc = "Focus upper window" })
-map("n", "<C-l>", "<C-w>l", { desc = "Focus right window" })
+-- Window navigation: <C-h/j/k/l> come from vim-tmux-navigator, which also
+-- crosses into tmux panes and falls back to plain window movement outside tmux.
+
+-- Save
+map("n", "<C-s>", "<cmd>w<cr>", { desc = "Save file" })
+map("i", "<C-s>", "<Esc><cmd>w<cr>", { desc = "Save file and leave insert mode" })
+
+-- Clear search highlight (alongside <Esc> below)
+map("n", "<C-x>", "<cmd>nohlsearch<cr>", { desc = "Clear search highlight" })
+
+-- <C-c> skips InsertLeave, leaving Copilot ghost text on screen and stalling
+-- the deferred diagnostics refresh; route it through <Esc> so hooks fire.
+map("i", "<C-c>", "<Esc>", { desc = "Exit insert mode (as Esc)" })
 
 -- Resize windows with arrows
 map("n", "<C-Up>", "<cmd>resize +2<cr>", { desc = "Grow window height" })
@@ -35,7 +43,40 @@ map("v", ">", ">gv", { desc = "Indent selection" })
 -- Buffers
 map("n", "<S-h>", "<cmd>bprevious<cr>", { desc = "Previous buffer" })
 map("n", "<S-l>", "<cmd>bnext<cr>", { desc = "Next buffer" })
-map("n", "<leader>bd", "<cmd>bdelete<cr>", { desc = "Delete buffer" })
+map("n", "<Tab>", "<cmd>BufferLineCycleNext<cr>", { desc = "Next buffer" })
+map("n", "<S-Tab>", "<cmd>BufferLineCyclePrev<cr>", { desc = "Previous buffer" })
+
+---Delete the current buffer without disturbing the window layout: every window
+---showing it switches to another listed buffer (or a fresh empty one) first.
+local function close_buffer()
+  local buf = vim.api.nvim_get_current_buf()
+  if vim.bo[buf].modified then
+    vim.notify("Buffer has unsaved changes", vim.log.levels.WARN)
+    return
+  end
+  local fallback ---@type integer?
+  for _, b in ipairs(vim.api.nvim_list_bufs()) do
+    if b ~= buf and vim.bo[b].buflisted then
+      fallback = b
+      break
+    end
+  end
+  for _, win in ipairs(vim.api.nvim_list_wins()) do
+    if vim.api.nvim_win_get_buf(win) == buf then
+      if fallback then
+        vim.api.nvim_win_set_buf(win, fallback)
+      else
+        vim.api.nvim_win_call(win, function()
+          vim.cmd.enew()
+        end)
+      end
+    end
+  end
+  pcall(vim.api.nvim_buf_delete, buf, {})
+end
+
+map("n", "<leader>xw", close_buffer, { desc = "Close buffer (keep window)" })
+map("n", "<leader>bd", close_buffer, { desc = "Close buffer (keep window)" })
 
 -- Built-in undo tree (Neovim 0.12, ships as an optional builtin package)
 vim.cmd.packadd("nvim.undotree")

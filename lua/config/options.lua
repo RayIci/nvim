@@ -40,9 +40,9 @@ o.ignorecase = true
 o.smartcase = true
 o.inccommand = "split"
 
--- Sessions: conservative set so plugin windows don't poison :mksession output.
--- 'curdir' keeps the project cwd; no 'blank', 'terminal', or 'help'.
-o.sessionoptions = "buffers,curdir,folds,tabpages,winsize,winpos"
+-- Sessions (auto-session): old-config set. 'globals' is required — bufferline
+-- persists pins in vim.g.BufferlinePinnedBuffers and re-pins on SessionLoadPost.
+o.sessionoptions = "blank,buffers,curdir,folds,help,tabpages,winsize,winpos,terminal,localoptions,globals"
 
 -- System clipboard
 vim.schedule(function()

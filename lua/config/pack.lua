@@ -50,6 +50,7 @@ vim.pack.add({
   -- Debugging & tasks
   gh("mfussenegger/nvim-dap"),
   gh("rcarriga/nvim-dap-ui"),
+  gh("theHamsta/nvim-dap-virtual-text"),
   gh("nvim-neotest/nvim-nio"),
   gh("mfussenegger/nvim-dap-python"),
   gh("stevearc/overseer.nvim"),
@@ -59,11 +60,16 @@ vim.pack.add({
   gh("CopilotC-Nvim/CopilotChat.nvim"),
 
   -- Pickers / navigation
+  -- telescope on master: 0.1.x calls the removed vim.treesitter ft_to_lang API
+  -- on Neovim 0.12. (The old selection right-shift was a caret-width issue in
+  -- our config, not a telescope version problem — see plugins/telescope.lua.)
   gh("nvim-telescope/telescope.nvim"),
   gh("nvim-telescope/telescope-fzf-native.nvim"),
+  gh("nvim-telescope/telescope-ui-select.nvim"),
   gh("folke/flash.nvim"),
   gh("RRethy/vim-illuminate"),
   gh("MagicDuck/grug-far.nvim"),
+  gh("christoomey/vim-tmux-navigator"),
 
   -- UI
   gh("folke/which-key.nvim"),
@@ -74,6 +80,10 @@ vim.pack.add({
   gh("nvim-lualine/lualine.nvim"),
   gh("akinsho/bufferline.nvim"),
   gh("nvim-neo-tree/neo-tree.nvim"),
+  gh("akinsho/toggleterm.nvim"),
+  gh("s1n7ax/nvim-window-picker"),
+  gh("MeanderingProgrammer/render-markdown.nvim"),
+  gh("rmagatti/auto-session"),
 
   -- Editing
   gh("kylechui/nvim-surround"),

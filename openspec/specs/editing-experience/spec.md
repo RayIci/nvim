@@ -28,11 +28,15 @@ The configuration SHALL provide as-you-type completion with blink.cmp (LSP, path
 - **THEN** the snippet expands with jumpable placeholders
 
 ### Requirement: Signature help while completing
-The configuration SHALL show function signature help (active parameter highlighted) automatically while typing call arguments.
+The configuration SHALL show function signature help (active parameter highlighted) automatically while typing call arguments, rendered by exactly one provider: blink.cmp's signature window. No other plugin (noice or otherwise) SHALL open a second signature window for the same trigger.
 
 #### Scenario: Signature popup
 - **WHEN** the user types `(` after a function name with an attached LSP
-- **THEN** a signature window appears highlighting the current parameter as the user types
+- **THEN** a single signature window appears highlighting the current parameter as the user types
+
+#### Scenario: No duplicate window
+- **WHEN** signature help triggers during completion of a function call
+- **THEN** exactly one floating signature window is visible
 
 ### Requirement: AI inline completion via native LSP
 The configuration SHALL provide Copilot ghost-text suggestions through `vim.lsp.inline_completion` backed by copilot-language-server installed via mason, with keymaps to accept a suggestion and cycle alternatives. No copilot.lua/copilot.vim plugin SHALL be used.
@@ -100,3 +104,14 @@ The configuration SHALL provide an interactive find-and-replace UI (grug-far.nvi
 #### Scenario: Replace with preview
 - **WHEN** the user opens the find-replace UI, enters a search and replacement
 - **THEN** matches across the project preview live and applying performs the replacement in all files
+
+### Requirement: Rendered markdown in completion windows
+blink.cmp's documentation and signature buffers SHALL render formatted markdown via render-markdown.nvim (their filetypes registered as markdown for treesitter), and the rendering SHALL stay correct while cycling candidates: because blink reuses the same buffer, a buffer-attach listener SHALL re-render on content change.
+
+#### Scenario: Formatted docs on first open
+- **WHEN** the completion documentation window opens for a candidate whose docs contain headings, emphasis, and code fences
+- **THEN** the window shows rendered markdown (styled headings, concealed markup, highlighted code) rather than raw markup
+
+#### Scenario: Rendering survives candidate cycling
+- **WHEN** the user cycles across several completion candidates with markdown documentation
+- **THEN** each candidate's documentation window remains rendered, not plain escaped markdown

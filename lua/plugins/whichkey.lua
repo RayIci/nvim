@@ -19,8 +19,9 @@ function M.setup()
     { "<leader>p", group = "plugins" },
     { "<leader>q", group = "session" },
     { "<leader>s", group = "search/replace" },
+    { "<leader>T", group = "terminal" },
     { "<leader>u", group = "ui/toggles" },
-    { "<leader>x", group = "diagnostics" },
+    { "<leader>x", group = "diagnostics/close" },
   })
 end
 

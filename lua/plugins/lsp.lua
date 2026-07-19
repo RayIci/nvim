@@ -25,9 +25,7 @@ local function on_attach_keymaps(ev)
   map("n", "H", function()
     vim.lsp.buf.hover({ border = "rounded", max_height = 25 })
   end, "Hover docs")
-  map("i", "<C-s>", function()
-    vim.lsp.buf.signature_help({ border = "rounded" })
-  end, "Signature help")
+  -- Signature help lives in blink.cmp (<C-k> toggle); <C-s> is reserved for saving.
   map("n", "<leader>ci", function()
     local enabled = vim.lsp.inlay_hint.is_enabled({ bufnr = ev.buf })
     vim.lsp.inlay_hint.enable(not enabled, { bufnr = ev.buf })
@@ -45,10 +43,11 @@ function M.setup()
     callback = on_attach_keymaps,
   })
 
-  -- Diagnostics presentation
+  -- Diagnostics presentation. update_in_insert follows the persisted
+  -- diagnostics-live pref (<leader>ud), like the nvim-lint live runs.
   vim.diagnostic.config({
     severity_sort = true,
-    update_in_insert = false,
+    update_in_insert = require("config.prefs").get("diagnostics_live", false),
     virtual_text = { source = "if_many", spacing = 2 },
     float = { border = "rounded", source = "if_many" },
     signs = {
@@ -63,6 +62,11 @@ function M.setup()
 
   vim.keymap.set("n", "<leader>cd", vim.diagnostic.open_float, { desc = "Line diagnostics" })
   vim.keymap.set("n", "<leader>cq", vim.diagnostic.setqflist, { desc = "Diagnostics to quickfix" })
+  vim.keymap.set("n", "<leader>ud", function()
+    local live = require("config.prefs").toggle("diagnostics_live", false)
+    vim.diagnostic.config({ update_in_insert = live })
+    vim.notify("Diagnostics refresh: " .. (live and "while typing" or "on open/save/insert-leave"))
+  end, { desc = "Toggle live diagnostics (persisted)" })
   -- ]d / [d / ]D / [D are built-in defaults in 0.12; keep them.
 end
 

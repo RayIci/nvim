@@ -1,13 +1,11 @@
----Workspace state persistence — deliberately plugin-free.
+---Per-project DAP breakpoint persistence — deliberately plugin-free.
+---Breakpoints (line, condition, log message) are snapshotted to JSON on exit and
+---restored per file on BufReadPost — which also covers buffers brought back by
+---auto-session, since :source reads each file. Sessions themselves are owned by
+---auto-session (lua/plugins/auto-session.lua); bufferline pins ride inside the
+---session file via the 'globals' sessionoption.
 ---
----Per-project (cwd-keyed) state survives restarts:
----  * DAP breakpoints  — restored per file on BufReadPost and after session restore
----  * session          — native :mksession, auto-saved on exit, restored on demand
----  * bufferline pins  — vim.g.BufferlinePinnedBuffers round-trip (bufferline
----                       re-pins on SessionLoadPost, which :source fires)
----
----Layout under stdpath('state'):
----  workspaces/<key>.json  and  sessions/<key>.vim
+---Layout under stdpath('state'): workspaces/<cwd-key>.json
 
 ---One persisted breakpoint.
 ---@class WorkspaceBreakpoint
@@ -19,7 +17,6 @@
 ---Persisted per-project state.
 ---@class WorkspaceState
 ---@field breakpoints table<string, WorkspaceBreakpoint[]> absolute file path -> breakpoints
----@field pinned string comma-separated pinned buffer paths (bufferline format)
 
 ---@class Workspace
 local M = {}
@@ -37,19 +34,6 @@ local function json_path()
   return vim.fs.joinpath(state_dir, "workspaces", project_key() .. ".json")
 end
 
----@return string
-local function session_path()
-  return vim.fs.joinpath(state_dir, "sessions", project_key() .. ".vim")
-end
-
----@param path string
-local function ensure_parent(path)
-  local dir = vim.fs.dirname(path)
-  if vim.fn.isdirectory(dir) == 0 then
-    vim.fn.mkdir(dir, "p")
-  end
-end
-
 ---@return WorkspaceState
 local function load_state()
   local ok, data = pcall(function()
@@ -57,16 +41,18 @@ local function load_state()
   end)
   if ok and type(data) == "table" then
     data.breakpoints = data.breakpoints or {}
-    data.pinned = data.pinned or ""
     return data
   end
-  return { breakpoints = {}, pinned = "" }
+  return { breakpoints = {} }
 end
 
 ---@param state WorkspaceState
 local function save_state(state)
   local path = json_path()
-  ensure_parent(path)
+  local dir = vim.fs.dirname(path)
+  if vim.fn.isdirectory(dir) == 0 then
+    vim.fn.mkdir(dir, "p")
+  end
   vim.fn.writefile({ vim.json.encode(state) }, path)
 end
 
@@ -138,59 +124,13 @@ local function persist()
   for file, list in pairs(current) do
     state.breakpoints[file] = list
   end
-  state.pinned = vim.g.BufferlinePinnedBuffers or state.pinned or ""
   save_state(state)
-end
-
----Save the session file for this project.
-local function save_session()
-  local path = session_path()
-  ensure_parent(path)
-  -- Close plugin-owned windows so they don't leak into the session file.
-  for _, win in ipairs(vim.api.nvim_list_wins()) do
-    local buf = vim.api.nvim_win_get_buf(win)
-    local ft = vim.bo[buf].filetype
-    if ft:match("^neo%-tree") or ft:match("^dap") or ft == "trouble" or ft == "OverseerList" then
-      pcall(vim.api.nvim_win_close, win, true)
-    end
-  end
-  vim.cmd("silent! mksession! " .. vim.fn.fnameescape(path))
-end
-
----Restore the project session: buffers/layout, then pins, then breakpoints.
-function M.restore()
-  local spath = session_path()
-  if vim.fn.filereadable(spath) == 0 then
-    vim.notify("No saved session for this directory", vim.log.levels.WARN)
-    return
-  end
-  local state = load_state()
-
-  -- Seed bufferline's global before :source — its once-only SessionLoadPost
-  -- handler re-pins buffers from this variable.
-  if state.pinned ~= "" then
-    vim.g.BufferlinePinnedBuffers = state.pinned
-  end
-
-  vim.cmd("silent! source " .. vim.fn.fnameescape(spath))
-
-  -- Breakpoints for every buffer the session brought back.
-  vim.schedule(function()
-    for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
-      if vim.api.nvim_buf_is_loaded(bufnr) then
-        local file = vim.api.nvim_buf_get_name(bufnr)
-        if file ~= "" then
-          restore_breakpoints_for(bufnr, file, state)
-        end
-      end
-    end
-  end)
 end
 
 function M.setup()
   local group = vim.api.nvim_create_augroup("config.workspace", { clear = true })
 
-  -- Reopening a single file brings its breakpoints back, session or not.
+  -- Reopening a file brings its breakpoints back — session-restored or not.
   vim.api.nvim_create_autocmd("BufReadPost", {
     group = group,
     callback = function(ev)
@@ -201,19 +141,10 @@ function M.setup()
     end,
   })
 
-  -- Persist everything on exit.
   vim.api.nvim_create_autocmd("VimLeavePre", {
     group = group,
-    callback = function()
-      persist()
-      save_session()
-    end,
+    callback = persist,
   })
-
-  vim.api.nvim_create_user_command("WorkspaceRestore", M.restore, {
-    desc = "Restore session, pins, and breakpoints for this directory",
-  })
-  vim.keymap.set("n", "<leader>qs", M.restore, { desc = "Restore workspace session" })
 end
 
 return M

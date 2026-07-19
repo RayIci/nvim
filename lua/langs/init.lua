@@ -17,6 +17,7 @@
 ---@field linters? table<string, string[]> filetype -> nvim-lint linter names
 ---@field dap? fun(dap: table) register DAP adapters/configurations
 ---@field mason? string[] mason package names to auto-install
+---@field setup? fun() run after all subsystem wiring (e.g. register terminal hooks)
 
 ---Merged view over all packs, consumed by lua/plugins/*.
 ---@class LangMerged
@@ -26,11 +27,12 @@
 ---@field linters table<string, string[]>
 ---@field dap fun(dap: table)[]
 ---@field mason string[]
+---@field setup fun()[]
 
 local M = {}
 
 ---@type LangMerged
-M.merged = { treesitter = {}, lsp = {}, formatters = {}, linters = {}, dap = {}, mason = {} }
+M.merged = { treesitter = {}, lsp = {}, formatters = {}, linters = {}, dap = {}, mason = {}, setup = {} }
 
 ---@param dst string[]
 ---@param src string[]
@@ -72,6 +74,9 @@ local function collect()
         if pack.dap then
           merged.dap[#merged.dap + 1] = pack.dap
         end
+        if pack.setup then
+          merged.setup[#merged.setup + 1] = pack.setup
+        end
       end
     end
   end
@@ -97,6 +102,14 @@ function M.setup()
   require("plugins.lint").apply(merged.linters)
   require("plugins.dap").apply(merged.dap)
   require("plugins.mason").apply(merged.mason)
+
+  -- Pack-level setup runs last, against fully-wired subsystems.
+  for _, setup in ipairs(merged.setup) do
+    local ok, err = pcall(setup)
+    if not ok then
+      vim.notify("langs setup: " .. tostring(err), vim.log.levels.ERROR)
+    end
+  end
 end
 
 return M
