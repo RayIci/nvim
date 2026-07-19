@@ -8,6 +8,10 @@
       "rev": "6cde3874a9283c2db55627acca5f28e4fa402320",
       "src": "https://github.com/rmagatti/auto-session"
     },
+    "better-escape.nvim": {
+      "rev": "3f4bc0b326606264ff75967f59091b5ddada0554",
+      "src": "https://github.com/max397574/better-escape.nvim"
+    },
     "blink.cmp": {
       "rev": "78336bc89ee5365633bcf754d93df01678b5c08f",
       "src": "https://github.com/Saghen/blink.cmp",
@@ -32,6 +36,10 @@
     "conform.nvim": {
       "rev": "619363c30309d29ffa631e67c8183f2a72caa373",
       "src": "https://github.com/stevearc/conform.nvim"
+    },
+    "copilot.lua": {
+      "rev": "2a849bc7bec4d175524c332c20d48ca9ece735df",
+      "src": "https://github.com/zbirenbaum/copilot.lua"
     },
     "everforest-nvim": {
       "rev": "d235ca0aa6a29546e661a020e2618612acbbffbe",

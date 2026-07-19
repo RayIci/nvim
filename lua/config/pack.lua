@@ -60,6 +60,7 @@ vim.pack.add({
 
   -- Git & AI
   gh("lewis6991/gitsigns.nvim"),
+  gh("zbirenbaum/copilot.lua"),
   gh("CopilotC-Nvim/CopilotChat.nvim"),
 
   -- Pickers / navigation
@@ -93,6 +94,7 @@ vim.pack.add({
   gh("windwp/nvim-autopairs"),
   gh("HiPhish/rainbow-delimiters.nvim"),
   gh("NMAC427/guess-indent.nvim"),
+  gh("max397574/better-escape.nvim"),
   gh("mg979/vim-visual-multi"),
 
   -- Themes

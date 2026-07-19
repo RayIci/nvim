@@ -20,6 +20,13 @@ map("n", "<C-x>", "<cmd>nohlsearch<cr>", { desc = "Clear search highlight" })
 -- the deferred diagnostics refresh; route it through <Esc> so hooks fire.
 map("i", "<C-c>", "<Esc>", { desc = "Exit insert mode (as Esc)" })
 
+-- Shift+Enter must behave as a plain newline. Depending on the terminal's
+-- keyboard protocol it arrives as <S-CR> (CSI-u) or as ESC+CR, which nvim
+-- decodes as <M-CR> — unmapped, that acts as Esc + Enter (exits insert and
+-- moves down a line, the reported bug under Windows Terminal/WSL).
+map("i", "<S-CR>", "<CR>", { desc = "New line (stay in insert)" })
+map("i", "<M-CR>", "<CR>", { desc = "New line (stay in insert)" })
+
 -- Resize windows with arrows
 map("n", "<C-Up>", "<cmd>resize +2<cr>", { desc = "Grow window height" })
 map("n", "<C-Down>", "<cmd>resize -2<cr>", { desc = "Shrink window height" })

@@ -90,9 +90,11 @@ to discard. `nvim-pack-lock.json` is committed; treat it like a lockfile.
 | `<leader>T` | terminal (toggleterm, `<C-t>` toggles / `2<C-t>` numbered): toggle `Tt`, horizontal/vertical/float `Th/Tv/Tf`, all `Ta`, 1-4 `T1-T4`, name `Tn`, rename `Tr`, send line/selection `Ts`; in terminal: `jk`/`<C-\>` to normal mode |
 
 Editing: multi-cursor `<C-n>` (skip with `q`), flash jump `s`, surround `ys/cs/ds`,
-references `]]`/`[[`, hunks `]h`/`[h`, inline AI: accept line `<C-t>`, word `<C-w>`,
-all `<M-l>`, dismiss `<C-]>`, cycle `<M-]>`/`<M-[>` (`<C-c>` acts as `<Esc>` so ghost
-text always clears).
+references `]]`/`[[`, hunks `]h`/`[h`, inline AI (copilot.lua, sign in with
+`:Copilot auth`): accept line `<C-t>`, word `<C-w>`, all `<M-l>`, dismiss `<C-]>`,
+cycle `<M-]>`/`<M-[>` — `<C-w>` is a no-op without a suggestion, `<C-t>` falls back
+to its builtin (`<C-c>` acts as `<Esc>` so ghost text always clears).
+Escape insert with `jk`/`jj` (lag-free, insert-only — terminals unaffected).
 Save `<C-s>` (normal+insert), save without formatting `<C-a>`, clear search `<C-x>`/`<Esc>`, tmux-aware window
 navigation `<C-h/j/k/l>` (vim-tmux-navigator). Cmdline renders at the bottom row;
 macro recording shows a red `REC @reg` indicator in the statusline.

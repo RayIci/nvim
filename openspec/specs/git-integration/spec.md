@@ -20,8 +20,16 @@ The configuration SHALL open lazygit in a floating terminal window via a keymap 
 - **THEN** lazygit opens in a centered float in insert/terminal mode, and quitting lazygit closes the float
 
 ### Requirement: Copilot-generated commit messages
-The configuration SHALL provide a keymap in `gitcommit` buffers that uses CopilotChat.nvim with the staged diff to generate a conventional commit message with a description body and insert it into the commit buffer.
+When a gitcommit buffer opens with no message yet (fresh commit), the configuration SHALL automatically generate a conventional commit title and description from the staged diff via CopilotChat.nvim in headless mode (no chat window) and insert it at the top of the buffer, once per buffer. Buffers arriving with an existing message (amend/reword) SHALL NOT trigger generation. A buffer-local keymap SHALL allow manual (re)generation.
 
-#### Scenario: Generate message in commit buffer
-- **WHEN** the user opens a commit buffer with staged changes and presses the generate keymap
-- **THEN** a commit title and description generated from the staged diff are inserted into the buffer for review before saving
+#### Scenario: Automatic message on fresh commit
+- **WHEN** the user runs `git commit` with staged changes and the commit buffer opens empty
+- **THEN** a generated title and description are inserted into the buffer without any chat window opening, ready to edit before saving
+
+#### Scenario: Amend untouched
+- **WHEN** the user runs `git commit --amend` and the buffer opens with the previous message
+- **THEN** no automatic generation happens
+
+#### Scenario: Manual regeneration
+- **WHEN** the user presses the generate keymap in a commit buffer
+- **THEN** a fresh message is generated headlessly and inserted

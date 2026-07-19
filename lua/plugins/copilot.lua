@@ -1,103 +1,82 @@
----GitHub Copilot ghost text via NATIVE vim.lsp.inline_completion (Neovim 0.12)
----backed by copilot-language-server (installed through mason). No copilot.lua
----plugin. Server definition ("copilot") ships with nvim-lspconfig, including
----:LspCopilotSignIn / :LspCopilotSignOut buffer commands for first-time auth.
+---GitHub Copilot ghost text via copilot.lua (old-config engine) backed by the
+---mason-installed copilot-language-server binary. copilot.lua provides real
+---partial accepts (word/line) and its keymaps fall back to the key's default
+---behavior whenever no suggestion is visible — the semantics the old config had.
+---Auth: :Copilot auth (device flow). The server stores tokens in
+---~/.config/github-copilot/auth.db (SQLite WAL); hard WSL shutdowns can lose
+---the uncheckpointed WAL — if sign-ins keep evaporating, the old config's
+---documented device-flow workaround (manual hosts.json) still works.
 ---@class PluginCopilot
 local M = {}
 
----Ghost text only appears once GitHub auth exists. The language server writes
----credentials to ~/.config/github-copilot/ on :LspCopilotSignIn; if neither
----token file is there yet, nudge once instead of failing silently.
+---Nudge once if no credentials exist yet (new SQLite scheme or legacy JSON).
 local function warn_if_signed_out()
   local config_home = vim.env.XDG_CONFIG_HOME or vim.fs.joinpath(vim.env.HOME or "", ".config")
-  for _, name in ipairs({ "apps.json", "hosts.json" }) do
+  for _, name in ipairs({ "auth.db", "apps.json", "hosts.json" }) do
     if vim.fn.filereadable(vim.fs.joinpath(config_home, "github-copilot", name)) == 1 then
       return
     end
   end
-  vim.notify("Copilot is not signed in — run :LspCopilotSignIn to enable inline suggestions", vim.log.levels.WARN)
+  vim.notify("Copilot is not signed in — run :Copilot auth to enable inline suggestions", vim.log.levels.WARN)
 end
 
 function M.setup()
-  vim.lsp.enable("copilot")
+  local server_bin = vim.fn.expand("$MASON/bin/copilot-language-server")
 
-  local warned = false
-
-  vim.api.nvim_create_autocmd("LspAttach", {
-    group = vim.api.nvim_create_augroup("config.copilot", { clear = true }),
-    callback = function(ev)
-      local client = assert(vim.lsp.get_client_by_id(ev.data.client_id))
-      if not client:supports_method(vim.lsp.protocol.Methods.textDocument_inlineCompletion, ev.buf) then
-        return
-      end
-
-      if not warned then
-        warned = true
-        warn_if_signed_out()
-      end
-
-      vim.lsp.inline_completion.enable(true, { bufnr = ev.buf })
-
-      -- Old-config keys. Partial accepts ride the native on_accept hook, which
-      -- exists precisely to trim a suggestion before insertion; snippets
-      -- (non-string insert_text) fall back to a full accept.
-      ---@param trim? fun(text: string): string
-      local function accept(trim)
-        return function()
-          local ok = vim.lsp.inline_completion.get({
-            on_accept = trim and function(item)
-              if type(item.insert_text) == "string" then
-                item.insert_text = trim(item.insert_text)
-              end
-              return item
-            end or nil,
-          })
-          if not ok then
-            vim.notify("No inline suggestion", vim.log.levels.INFO)
-          end
-        end
-      end
-      local function dismiss()
-        -- No public dismiss API: a buffer-scoped disable/enable cycle clears
-        -- the visible ghost text without touching the global toggle.
-        vim.lsp.inline_completion.enable(false, { bufnr = ev.buf })
-        vim.lsp.inline_completion.enable(true, { bufnr = ev.buf })
-      end
-
-      vim.keymap.set("i", "<C-t>", accept(function(text)
-        return text:match("^[^\n]*\n?") or text
-      end), { buffer = ev.buf, desc = "Accept suggestion line" })
-      vim.keymap.set("i", "<C-w>", accept(function(text)
-        return text:match("^%s*%S+") or text
-      end), { buffer = ev.buf, desc = "Accept suggestion word" })
-      vim.keymap.set("i", "<M-l>", accept(), { buffer = ev.buf, desc = "Accept inline suggestion" })
-      vim.keymap.set("i", "<C-]>", dismiss, { buffer = ev.buf, desc = "Dismiss inline suggestion" })
-      vim.keymap.set("i", "<M-]>", function()
-        vim.lsp.inline_completion.select({ count = 1 })
-      end, { buffer = ev.buf, desc = "Next inline suggestion" })
-      vim.keymap.set("i", "<M-[>", function()
-        vim.lsp.inline_completion.select({ count = -1 })
-      end, { buffer = ev.buf, desc = "Previous inline suggestion" })
-    end,
+  require("copilot").setup({
+    server = {
+      type = "binary",
+      custom_server_filepath = vim.fn.executable(server_bin) == 1 and server_bin or nil,
+    },
+    suggestion = {
+      enabled = true,
+      auto_trigger = true,
+      debounce = 75,
+      hide_during_completion = false, -- ghost text stays visible with blink's menu
+      -- false: accept keys act ONLY on a visible suggestion and pass through to
+      -- their built-in behavior otherwise (<C-w> delete word, <C-t> indent).
+      -- true would consume the key to trigger a request, eating the keypress.
+      trigger_on_accept = false,
+      -- Old-config keys; copilot.lua falls back to the key's built-in behavior
+      -- when no suggestion is visible. accept_word is mapped directly below
+      -- instead (user never uses insert delete-word; no fallback wanted).
+      keymap = {
+        accept = "<M-l>",
+        accept_word = false,
+        accept_line = "<C-t>",
+        next = "<M-]>",
+        prev = "<M-[>",
+        dismiss = "<C-]>",
+      },
+    },
+    panel = { enabled = true, keymap = { open = false } },
+    filetypes = { markdown = true, yaml = true },
   })
 
-  -- Belt-and-braces ghost-text cleanup when leaving insert or the buffer
+  -- Direct accept-word map, no passthrough: harmless no-op without a
+  -- suggestion (replaces Nvim's default i_CTRL-W delete-word, unused here).
+  vim.keymap.set("i", "<C-w>", function()
+    require("copilot.suggestion").accept_word()
+  end, { desc = "Accept Copilot word" })
+
+  vim.defer_fn(warn_if_signed_out, 2000)
+
+  -- Clear lingering ghost text when leaving insert mode or the buffer
   -- (ported from the old config's CopilotCleanup autocmd).
   vim.api.nvim_create_autocmd({ "InsertLeave", "BufLeave" }, {
     group = vim.api.nvim_create_augroup("config.copilot.cleanup", { clear = true }),
-    callback = function(ev)
-      if vim.lsp.inline_completion.is_enabled({ bufnr = ev.buf }) then
-        vim.lsp.inline_completion.enable(false, { bufnr = ev.buf })
-        vim.lsp.inline_completion.enable(true, { bufnr = ev.buf })
+    callback = function()
+      local ok, suggestion = pcall(require, "copilot.suggestion")
+      if ok then
+        pcall(suggestion.dismiss)
       end
     end,
   })
 
   vim.keymap.set("n", "<leader>ua", function()
-    local enabled = not vim.lsp.inline_completion.is_enabled()
-    vim.lsp.inline_completion.enable(enabled)
-    vim.notify("Inline AI completion: " .. (enabled and "on" or "off"))
-  end, { desc = "Toggle inline AI completion" })
+    require("copilot.suggestion").toggle_auto_trigger()
+    vim.notify("Copilot auto-trigger: " .. (vim.b.copilot_suggestion_auto_trigger == false and "off" or "on"))
+  end, { desc = "Toggle Copilot auto-trigger" })
 end
 
 return M
