@@ -71,3 +71,26 @@
 ## 13. Save without formatting
 
 - [x] 13.1 `<C-a>` (n+i) one-shot no-format save via conform format_on_save bypass flag; verified behaviorally with stylua; spec + README updated
+
+## 14. Lazygit responsiveness
+
+- [x] 14.1 Exclude the lazygit float from terminal jk/C-hjkl maps via b:term_no_escape_maps (pending jk map lagged every j press and fast j/k exited terminal mode); keep <C-\> escape; verified per-buffer map sets headless
+- [x] 14.2 REPL: <leader>drx clear (dap.repl.clear, verified end-to-end) + nvim-dap-repl-highlights with dap_repl parser in the treesitter install list
+
+## 15. Leader-l LSP tree & leader-k trouble
+
+- [x] 15.1 Move trouble pickers to <leader>k (old-config layout: kd/kD/kl/kq/kw/ks); <leader>x becomes close-only; which-key groups updated
+- [x] 15.2 <leader>l LSP command tree on attach: la/lr/lk/lo, ld* diagnostics, lw* workspace folders, lh* call hierarchy (telescope), li global inlay toggle, lc* codelens (run/refresh/toggle) with old-config auto-refresh autocmd; verified on live lua_ls attach
+
+## 16. REPL completion, telescope/neotree hides, advanced yank
+
+- [x] 16.1 blink completes in dap-repl via built-in omni source (per_filetype) + enabled override for that prompt buffer — replaces old blink.compat/cmp-dap/nilguard stack; other prompt buffers stay disabled
+- [x] 16.2 Telescope: old-config file_ignore_patterns for find_files and live_grep + --hidden vimgrep args
+- [x] 16.3 Neo-tree: old-config hide_by_name/hide_by_pattern/never_show lists and Y advanced-yank path chooser
+- [x] 16.4 REPL completion redone: omni-source attempt was kind-less and overlapped the prompt — replaced with old-config blink.compat + cmp-dap (per-filetype dap source for dap-repl/dapui buffers, is_dap_buffer enabled gate, trigger-char nilguard ported)
+
+## 17. Breakpoint persistence at mutation time
+
+- [x] 17.1 Wrap dap.breakpoints set/remove/remove_by_id/toggle/clear with a debounced persist — fixes loss on :restart (VimLeavePre never fires there) and all hard-exit paths; VimLeavePre kept as backstop; verified mid-session writes (add, direct set with condition, removals) and reopen restore
+- [x] 17.2 Neo-tree state persists at event time: after_render + window open/close events schedule debounced saves (survives :restart/crash); exiting flag stops auto-session's exit window-teardown from recording is_open=false; never-opened sessions preserve the prior expansion list; all verified mid-session headless
+- [x] 17.3 Buffers + pins persist at change time: workspace snapshot (buffers list + vim.g.BufferlinePinnedBuffers) written debounced on BufAdd/BufDelete/BufFilePost and pin toggles; post-restore reconcile re-adds/drops buffers vs the stale session (sparing modified/displayed ones), seeds fresh pin data, and the pin sync now also unpins stale session pins; verified mid-session writes + full stale-session reconcile headless

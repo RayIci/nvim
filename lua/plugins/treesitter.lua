@@ -5,6 +5,9 @@
 local M = {}
 
 function M.setup()
+  -- Registers the dap_repl parser source; must run before nvim-treesitter
+  -- installs parsers and before dap.repl loads (old-config order).
+  require("nvim-dap-repl-highlights").setup()
   require("nvim-treesitter").setup({})
 end
 
@@ -15,6 +18,7 @@ function M.apply(parsers)
   local wanted = vim.list_extend({
     "vim", "vimdoc", "query", "markdown", "markdown_inline",
     "regex", "bash", "diff", "gitcommit", "json", "yaml", "toml",
+    "dap_repl", -- REPL syntax highlighting (nvim-dap-repl-highlights)
   }, parsers)
 
   require("nvim-treesitter").install(wanted)

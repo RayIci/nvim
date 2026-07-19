@@ -119,12 +119,17 @@ function M.setup()
   map("n", "<leader>Ts", "<cmd>ToggleTermSendCurrentLine<cr>", { desc = "Send line to terminal" })
   map("v", "<leader>Ts", "<cmd>ToggleTermSendVisualSelection<cr>", { desc = "Send selection to terminal" })
 
-  -- Buffer-local terminal-mode maps for every terminal buffer
+  -- Buffer-local terminal-mode maps for every terminal buffer. Interactive
+  -- TUIs (lazygit) opt out via b:term_no_escape_maps: a pending jk map delays
+  -- every j keystroke and fast j/k navigation would exit terminal mode.
   vim.api.nvim_create_autocmd("TermOpen", {
     group = vim.api.nvim_create_augroup("config.toggleterm.keymaps", { clear = true }),
     callback = function(ev)
       local set = vim.keymap.set
       set("t", "<C-\\>", [[<C-\><C-n>]], { buffer = ev.buf, desc = "Exit terminal mode" })
+      if vim.b[ev.buf].term_no_escape_maps then
+        return
+      end
       set("t", "jk", [[<C-\><C-n>]], { buffer = ev.buf, desc = "Exit terminal mode" })
       set("t", "<C-h>", [[<Cmd>wincmd h<CR>]], { buffer = ev.buf, desc = "Window left" })
       set("t", "<C-j>", [[<Cmd>wincmd j<CR>]], { buffer = ev.buf, desc = "Window down" })

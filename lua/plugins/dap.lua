@@ -248,6 +248,9 @@ function M.setup()
       vim.notify("dap.repl.run_last is not available in this nvim-dap version", vim.log.levels.WARN)
     end
   end, { desc = "REPL run last" })
+  map("n", "<leader>drx", function()
+    dap.repl.clear()
+  end, { desc = "Clear REPL" })
 
   -- Multi-session
   map("n", "<leader>dSs", switch_session, { desc = "Switch/list sessions" })

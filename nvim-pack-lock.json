@@ -13,6 +13,10 @@
       "src": "https://github.com/Saghen/blink.cmp",
       "version": "1.0.0 - 2.0.0"
     },
+    "blink.compat": {
+      "rev": "1454f14a8d855a578ceeba77c62538fa1459a67c",
+      "src": "https://github.com/Saghen/blink.compat"
+    },
     "bufferline.nvim": {
       "rev": "655133c3b4c3e5e05ec549b9f8cc2894ac6f51b3",
       "src": "https://github.com/akinsho/bufferline.nvim"
@@ -20,6 +24,10 @@
     "catppuccin": {
       "rev": "05e8787020dcfdb937bf2ff23855ea2415b4e072",
       "src": "https://github.com/catppuccin/nvim"
+    },
+    "cmp-dap": {
+      "rev": "ea92773e84c0ad3288c3bc5e452ac91559669087",
+      "src": "https://github.com/rcarriga/cmp-dap"
     },
     "conform.nvim": {
       "rev": "619363c30309d29ffa631e67c8183f2a72caa373",
@@ -108,6 +116,10 @@
     "nvim-dap-python": {
       "rev": "1808458eba2b18f178f990e01376941a42c7f93b",
       "src": "https://github.com/mfussenegger/nvim-dap-python"
+    },
+    "nvim-dap-repl-highlights": {
+      "rev": "f31deba47fe3ee6ff8d2f13d9dbd06b2d1ae06b5",
+      "src": "https://github.com/LiadOz/nvim-dap-repl-highlights"
     },
     "nvim-dap-ui": {
       "rev": "cc9dd33aade7f20bae414d0cba163bc60d4d4b43",

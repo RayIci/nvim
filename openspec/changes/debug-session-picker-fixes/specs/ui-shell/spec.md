@@ -3,7 +3,7 @@
 ## MODIFIED Requirements
 
 ### Requirement: Telescope fuzzy finding
-The configuration SHALL provide telescope.nvim with the fzf-native sorter and keymaps for: find files, live grep, buffers, help tags, recent files, and resume, under a `<leader>f` which-key group. `<leader><leader>` SHALL open the find-files picker and `<leader>ff` SHALL resume the last-used picker with its previous query and results. Result rows SHALL keep stable alignment while the selection moves: the selection caret and entry prefix MUST have equal display width, since telescope re-renders visited rows and a width mismatch accumulates a residual shift.
+The configuration SHALL provide telescope.nvim with the fzf-native sorter, the old config's ignore patterns (build artifacts, VCS dirs, binary and lock files) for find-files and live-grep, hidden files included, and keymaps for: find files, live grep, buffers, help tags, recent files, and resume, under a `<leader>f` which-key group. `<leader><leader>` SHALL open the find-files picker and `<leader>ff` SHALL resume the last-used picker with its previous query and results. Result rows SHALL keep stable alignment while the selection moves: the selection caret and entry prefix MUST have equal display width, since telescope re-renders visited rows and a width mismatch accumulates a residual shift.
 
 #### Scenario: Live grep
 - **WHEN** the user presses the live-grep keymap and types a pattern
@@ -55,6 +55,52 @@ The configuration SHALL provide automatic session management through auto-sessio
 - **WHEN** neo-tree was closed at exit and the session is restored
 - **THEN** neo-tree does not open
 
+#### Scenario: Neo-tree state survives :restart
+- **WHEN** the user expands folders or opens/closes the tree and the process ends without exit hooks (`:restart`, crash, kill)
+- **THEN** the latest tree state was already persisted by neo-tree's render/window events and is restored next time
+
+#### Scenario: Unopened tree keeps its memory
+- **WHEN** a session ends in which neo-tree was never opened
+- **THEN** the previously saved expanded-folders list is preserved, not wiped
+
+#### Scenario: Buffers and pins survive :restart
+- **WHEN** the user opens new files, closes others, and changes pins, then the process ends without exit hooks (`:restart`, crash, kill)
+- **THEN** on the next start the restored session is reconciled against the change-time workspace snapshot: since-opened files are re-added, since-closed unmodified buffers are dropped, and the pin set matches the latest state
+
+#### Scenario: Stale session pins corrected
+- **WHEN** a buffer was unpinned after the last clean session save and the process hard-exited
+- **THEN** after restore that buffer is not pinned
+
+### Requirement: Shell UI plugins
+The configuration SHALL include: neo-tree.nvim (file explorer toggle on `<leader>e`), lualine.nvim (mode, branch, diff, diagnostics, filetype), trouble.nvim (panels under a `<leader>k` which-key group: workspace/buffer diagnostics, loclist, quickfix, LSP defs/refs panel, symbols outline — the old-config layout, freeing `<leader>x` for buffer-closing keymaps), todo-comments.nvim (TODO/FIXME highlighting + telescope picker), and indent-blankline.nvim (indent guides).
+
+#### Scenario: Explorer toggle
+- **WHEN** the user presses `<leader>e`
+- **THEN** neo-tree opens showing the project tree, and pressing it again closes it
+
+#### Scenario: Diagnostics panel
+- **WHEN** the user presses `<leader>kd` with diagnostics present
+- **THEN** a structured list of project diagnostics is shown and selecting an entry jumps to its location
+
+### Requirement: Neo-tree smart file opening
+The neo-tree window SHALL be 45 columns wide, and pressing `w` or `<cr>` on a file SHALL open it via nvim-window-picker: with at most one eligible target window the file opens directly; with multiple eligible windows a picker prompts for the destination, excluding neo-tree, notification, terminal, and quickfix windows. Pressing `w` or `<cr>` on a directory SHALL toggle it. The old config's hide lists SHALL apply (by name: `.git`, cache dirs, `bin`/`obj`, `node_modules`, `.next`; by pattern: venvs and `*.egg-info`; never shown: `__pycache__`), and `Y` SHALL open the advanced-yank chooser copying the node's filename, stem, absolute path, cwd-relative path, home-relative path, or extension to the clipboard.
+
+#### Scenario: Open with single window
+- **WHEN** one editing window exists and the user presses `w` on a file in neo-tree
+- **THEN** the file opens in that window without any picker prompt
+
+#### Scenario: Open with multiple windows
+- **WHEN** two editing windows exist and the user presses `w` on a file in neo-tree
+- **THEN** a window-picker overlay appears and the file opens in the chosen window
+
+#### Scenario: Advanced yank
+- **WHEN** the user presses `Y` on a file in neo-tree and picks "Path relative to CWD"
+- **THEN** that relative path lands in the system clipboard
+
+#### Scenario: Noise hidden
+- **WHEN** a project contains `__pycache__` and `node_modules` directories
+- **THEN** `__pycache__` never appears and `node_modules` is hidden by default
+
 ## ADDED Requirements
 
 ### Requirement: Macro recording visibility
@@ -65,7 +111,7 @@ The statusline SHALL show a highlighted `REC @<register>` indicator while a macr
 - **THEN** the statusline shows `REC @q` for the whole recording and clears it when recording stops
 
 ### Requirement: Extensible toggleterm terminal
-The configuration SHALL provide terminals via toggleterm.nvim: `<C-t>` toggles (count-prefixed for numbered terminals, works in normal/insert/terminal modes), a `<leader>T` which-key group covers directions (horizontal/vertical/float), terminals 1-4, toggle-all, named creation, rename, and sending the current line or visual selection; terminal buffers get local keymaps (`<C-\>`/`jk` to normal mode, `<C-h/j/k/l>` window navigation). The terminal module SHALL expose a hook registry (`register_on_create`, `register_on_open`, `register_on_close`, `register_on_stdout`, `register_on_stderr`, `register_on_exit`) callable from any other module, with hooks registered at any time firing for subsequent terminal events.
+The configuration SHALL provide terminals via toggleterm.nvim: `<C-t>` toggles (count-prefixed for numbered terminals, works in normal/insert/terminal modes), a `<leader>T` which-key group covers directions (horizontal/vertical/float), terminals 1-4, toggle-all, named creation, rename, and sending the current line or visual selection; terminal buffers get local keymaps (`<C-\>`/`jk` to normal mode, `<C-h/j/k/l>` window navigation). Interactive TUI terminals (lazygit) SHALL be excluded from the `jk` and `<C-h/j/k/l>` maps via a buffer flag — a pending `jk` map delays every `j` keystroke and fast `j`/`k` navigation would exit terminal mode — keeping only `<C-\>` as a deliberate escape. The terminal module SHALL expose a hook registry (`register_on_create`, `register_on_open`, `register_on_close`, `register_on_stdout`, `register_on_stderr`, `register_on_exit`) callable from any other module, with hooks registered at any time firing for subsequent terminal events.
 
 #### Scenario: Toggle and escape
 - **WHEN** the user presses `<C-t>` and then `jk` inside the terminal

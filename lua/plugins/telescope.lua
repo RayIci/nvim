@@ -2,10 +2,46 @@
 ---@class PluginTelescope
 local M = {}
 
+-- Ignore lists ported from the old dotfiles config
+local find_ignore = { "node_modules/", "dist/", "build/", "%.git/", "vendor/" }
+local grep_ignore = {
+  "node_modules/.*",
+  "dist/",
+  "build/",
+  "%.git/",
+  "vendor/",
+  "%.lock",
+  "%.jpg",
+  "%.jpeg",
+  "%.png",
+  "%.svg",
+  "%.otf",
+  "%.ttf",
+  "%.webp",
+  "%.gif",
+  "%.zip",
+  "%.tar.gz",
+  "%.tar.bz2",
+  "%.exe",
+  "%.dll",
+  "%.class",
+  "%.jar",
+}
+
 function M.setup()
   local telescope = require("telescope")
   telescope.setup({
     defaults = {
+      vimgrep_arguments = {
+        "rg",
+        "--color=never",
+        "--no-heading",
+        "--with-filename",
+        "--line-number",
+        "--column",
+        "--smart-case",
+        "--hidden",
+      },
       prompt_prefix = "   ",
       -- Caret and entry_prefix MUST have equal display width: telescope
       -- re-renders rows on selection moves, and a wider caret leaves a
@@ -16,7 +52,8 @@ function M.setup()
       layout_config = { prompt_position = "top" },
     },
     pickers = {
-      find_files = { hidden = true },
+      find_files = { hidden = true, file_ignore_patterns = find_ignore },
+      live_grep = { file_ignore_patterns = grep_ignore },
     },
     extensions = {
       -- vim.ui.select provider: makes the DAP config chooser and code actions

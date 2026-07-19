@@ -41,6 +41,8 @@ vim.pack.add({
 
   -- Completion
   { src = gh("Saghen/blink.cmp"), version = vim.version.range("1") },
+  gh("Saghen/blink.compat"),
+  gh("rcarriga/cmp-dap"),
   gh("rafamadriz/friendly-snippets"),
 
   -- Format / lint
@@ -51,6 +53,7 @@ vim.pack.add({
   gh("mfussenegger/nvim-dap"),
   gh("rcarriga/nvim-dap-ui"),
   gh("theHamsta/nvim-dap-virtual-text"),
+  gh("LiadOz/nvim-dap-repl-highlights"),
   gh("nvim-neotest/nvim-nio"),
   gh("mfussenegger/nvim-dap-python"),
   gh("stevearc/overseer.nvim"),

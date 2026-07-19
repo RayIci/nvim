@@ -29,3 +29,29 @@ The configuration SHALL show variable values as end-of-line virtual text during 
 #### Scenario: Toggle persists
 - **WHEN** the user disables debug virtual text with `<leader>dv` and restarts Neovim
 - **THEN** virtual text stays disabled in the next debug session until toggled back on
+
+### Requirement: REPL clear and syntax highlighting
+The DAP REPL SHALL support clearing its contents via a keymap (`<leader>drx`) and SHALL render entered expressions with treesitter syntax highlighting via nvim-dap-repl-highlights (`dap_repl` parser installed through nvim-treesitter, registered before parser installation). blink.cmp SHALL complete in DAP buffers (`dap-repl`, dapui watches/hover) through cmp-dap via blink.compat — preserving completion-item kinds (method, function, field…) in the menu — with blink's prompt-buftype exclusion lifted only for DAP buffers (other prompt buffers such as telescope's stay completion-free). cmp-dap's trigger characters SHALL be guarded against sessionless calls and always include `.` (old-config nilguard).
+
+#### Scenario: Adapter completions in the REPL
+- **WHEN** the user types an object name followed by `.` in the REPL during a debug session
+- **THEN** blink's menu (kind icons included) offers the adapter's member completions without covering the prompt line
+
+#### Scenario: Clear the REPL
+- **WHEN** the REPL contains output and the user presses `<leader>drx`
+- **THEN** the REPL buffer is emptied
+
+#### Scenario: Highlighted REPL input
+- **WHEN** the user types an expression in the REPL during a debug session
+- **THEN** the expression renders with syntax highlighting for the session's language
+
+### Requirement: Breakpoints persist at mutation time
+Breakpoint persistence SHALL NOT depend on exit hooks: every mutating operation on dap.breakpoints (set, remove, remove_by_id, toggle, clear — from keymaps, dap-ui, or the API) SHALL schedule a debounced write of the per-project state file, so breakpoints survive `:restart`, crashes, and process kills. The VimLeavePre write remains only as a backstop.
+
+#### Scenario: Survives :restart
+- **WHEN** the user adds a breakpoint and immediately runs `:restart`
+- **THEN** the breakpoint reappears in the restarted instance when the file is reopened
+
+#### Scenario: Removal survives hard exit
+- **WHEN** the user removes a breakpoint and the process is killed without VimLeavePre firing
+- **THEN** the removed breakpoint does not reappear on the next start

@@ -76,11 +76,13 @@ to discard. `nvim-pack-lock.json` is committed; treat it like a lockfile.
 |---|---|
 | `<leader>f` | find: files `<leader><leader>`, resume `ff`, grep `fg`, buffers `fb`, recent `fr`, diagnostics `fd`, TODOs `ft`, notifications `fn` |
 | `<leader>g` | git: lazygit `gg`, stage hunk `gs`, reset `gr`, preview `gp`, blame `gb`, commit msg (in gitcommit) `gm` |
-| `<leader>d` | debug: continue `dc`/`F5`, breakpoint `dd`/`B`, groups: breakpoints `db*`, step `ds*` (+`F9/F10/F11`), windows `dw*`, UI `du*` (toggle `duu`), REPL `dr*`, sessions `dS*`, launch `dl*`, eval `de/dE`, hover `dh`, virtual text toggle `dv` (persisted) |
+| `<leader>d` | debug: continue `dc`/`F5`, breakpoint `dd`/`B`, groups: breakpoints `db*`, step `ds*` (+`F9/F10/F11`), windows `dw*`, UI `du*` (toggle `duu`), REPL `dr*` (clear `drx`, highlighted), sessions `dS*`, launch `dl*`, eval `de/dE`, hover `dh`, virtual text toggle `dv` (persisted) |
 | `<leader>c` | code: format `cf`, diagnostics float `cd`, inlay hints `ci` (LSP: `gd`, `grr`, `grn`, `gra`, `K`) |
 | `<leader>b` | buffers: pin `bp`, close others `bo`, delete `bd`/`xw`, close all `xa` / others `xA` (keep pinned+unsaved; cycle: `Tab`/`S-Tab`, `S-h`/`S-l`) |
 | `<leader>o` | tasks: run `or`, list `ot` (.vscode/tasks.json supported) |
-| `<leader>x` | panels: diagnostics `xx`, buffer `xb`, quickfix `xq`, TODOs `xt` |
+| `<leader>k` | trouble: diagnostics `kd`/`kD`, loclist `kl`, quickfix `kq`, LSP panel `kw`, symbols `ks` |
+| `<leader>l` | lsp: code action `la`, rename `lr`, signature `lk`, outline `lo`, diagnostics `ld*`, workspace `lw*`, calls `lh*`, inlay toggle `li`, codelens `lc*` |
+| `<leader>x` | close: buffer `xw`, all `xa`, others `xA` (keep pinned/unsaved) |
 | `<leader>u` | ui: theme `ut`, rainbow toggle `ur`, format-on-save `uf`, AI toggle `ua`, undotree `uu`, live diagnostics `ud` (persisted; default: open/save/insert-leave) |
 | `<leader>a` | ai: chat `aa`, explain `ae`, review `ar` |
 | `<leader>s` | replace: project `sr`, word `sw` |

@@ -12,6 +12,10 @@ local function open_lazygit()
   local width = math.floor(vim.o.columns * 0.9)
   local height = math.floor(vim.o.lines * 0.9)
   local buf = vim.api.nvim_create_buf(false, true)
+  -- Interactive TUI: keep j/k instant — the terminal jk/C-hjkl maps must not
+  -- attach here (a pending jk map lags every j press and can kick lazygit
+  -- into normal mode). Set before jobstart so TermOpen handlers see it.
+  vim.b[buf].term_no_escape_maps = true
   local win = vim.api.nvim_open_win(buf, true, {
     relative = "editor",
     width = width,

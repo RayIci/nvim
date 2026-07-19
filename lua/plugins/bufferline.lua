@@ -80,7 +80,11 @@ function M.setup()
   })
 
   local map = vim.keymap.set
-  map("n", "<leader>bp", "<cmd>BufferLineTogglePin<cr>", { desc = "Pin/unpin buffer" })
+  map("n", "<leader>bp", function()
+    vim.cmd("BufferLineTogglePin")
+    -- pin state persists at change time (workspace snapshot), not just on exit
+    require("config.workspace").touch()
+  end, { desc = "Pin/unpin buffer" })
   map("n", "<leader>bo", "<cmd>BufferLineCloseOthers<cr>", { desc = "Close other buffers" })
   map("n", "<leader>xa", close_all_buffers, { desc = "Close all buffers (keep pinned/unsaved)" })
   map("n", "<leader>xA", close_other_buffers, { desc = "Close other buffers (keep pinned/unsaved)" })

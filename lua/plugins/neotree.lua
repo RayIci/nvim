@@ -2,6 +2,41 @@
 ---@class PluginNeotree
 local M = {}
 
+---Yank the node's path in a chosen form (old-config "advanced yank" on Y).
+---@param state table neo-tree state
+local function copy_node_path(state)
+  local node = state.tree:get_node()
+  local filepath = node:get_id()
+  local filename = node.name
+  local modify = vim.fn.fnamemodify
+
+  local results = {
+    filename,
+    modify(filename, ":r"),
+    filepath,
+    modify(filepath, ":."),
+    modify(filepath, ":~"),
+    modify(filename, ":e"),
+  }
+
+  vim.ui.select({
+    "1. Filename: " .. results[1],
+    "2. Filename without extension: " .. results[2],
+    "3. Absolute path: " .. results[3],
+    "4. Path relative to CWD: " .. results[4],
+    "5. Path relative to HOME: " .. results[5],
+    "6. Extension of the filename: " .. results[6],
+  }, { prompt = "Choose to copy to clipboard:" }, function(choice)
+    if choice then
+      local result = results[tonumber(choice:sub(1, 1))]
+      vim.fn.setreg("+", result)
+      vim.fn.setreg("*", result)
+      vim.fn.setreg('"', result)
+      vim.notify("Copied: " .. result)
+    end
+  end)
+end
+
 ---Open the node under the cursor: directories toggle; files open directly when
 ---at most one eligible window exists, otherwise through the window picker.
 ---@param state table neo-tree state
@@ -43,9 +78,16 @@ function M.setup()
     close_if_last_window = true,
     filesystem = {
       follow_current_file = { enabled = true },
+      -- Hide lists ported from the old dotfiles config
       filtered_items = {
         hide_dotfiles = false,
-        hide_by_name = { ".git" },
+        hide_gitignored = false,
+        hide_by_name = {
+          ".git", ".mypy_cache", ".pytest_cache", ".ruff_cache", ".github",
+          "bin", "obj", "bin\\Debug", "bin\\Release", "node_modules", ".next",
+        },
+        hide_by_pattern = { ".*venv*", "*.egg-info" },
+        never_show = { "__pycache__" },
       },
       use_libuv_file_watcher = true,
     },
@@ -54,6 +96,7 @@ function M.setup()
       mappings = {
         ["w"] = open_with_smart_picker,
         ["<cr>"] = open_with_smart_picker,
+        ["Y"] = copy_node_path,
       },
     },
   })

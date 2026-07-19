@@ -7,7 +7,7 @@ local M = {}
 local function on_attach_keymaps(ev)
   ---@param mode string|string[]
   ---@param lhs string
-  ---@param rhs function
+  ---@param rhs function|string
   ---@param desc string
   local function map(mode, lhs, rhs, desc)
     vim.keymap.set(mode, lhs, rhs, { buffer = ev.buf, desc = desc })
@@ -30,6 +30,80 @@ local function on_attach_keymaps(ev)
     local enabled = vim.lsp.inlay_hint.is_enabled({ bufnr = ev.buf })
     vim.lsp.inlay_hint.enable(not enabled, { bufnr = ev.buf })
   end, "Toggle inlay hints")
+
+  -- <leader>l: the old-config LSP command tree (native/telescope equivalents;
+  -- lspsaga-only peeks are not ported)
+  map("n", "<leader>lk", function()
+    vim.lsp.buf.signature_help({ border = "rounded" })
+  end, "Signature help")
+  map({ "n", "v" }, "<leader>la", vim.lsp.buf.code_action, "Code action")
+  map("n", "<leader>lr", vim.lsp.buf.rename, "Rename symbol")
+  map("n", "<leader>lo", "<cmd>Trouble symbols toggle focus=false<cr>", "Symbol outline")
+
+  -- Diagnostics
+  map("n", "<leader>ldd", vim.diagnostic.open_float, "Line diagnostics")
+  map("n", "<leader>ldb", function()
+    tb.diagnostics({ bufnr = 0 })
+  end, "Buffer diagnostics")
+  map("n", "<leader>ldw", tb.diagnostics, "Workspace diagnostics")
+  map("n", "<leader>ldl", vim.diagnostic.setloclist, "Diagnostics to loclist")
+  map("n", "<leader>ldq", vim.diagnostic.setqflist, "Diagnostics to quickfix")
+
+  -- Workspace folders
+  map("n", "<leader>lwa", vim.lsp.buf.add_workspace_folder, "Add workspace folder")
+  map("n", "<leader>lwr", vim.lsp.buf.remove_workspace_folder, "Remove workspace folder")
+  map("n", "<leader>lwl", function()
+    vim.print(vim.lsp.buf.list_workspace_folders())
+  end, "List workspace folders")
+
+  -- Call hierarchy
+  map("n", "<leader>lhi", tb.lsp_incoming_calls, "Incoming calls")
+  map("n", "<leader>lho", tb.lsp_outgoing_calls, "Outgoing calls")
+
+  -- Inlay hints, global toggle (buffer-local toggle stays on <leader>ci)
+  map("n", "<leader>li", function()
+    local enabled = not vim.lsp.inlay_hint.is_enabled()
+    vim.lsp.inlay_hint.enable(enabled)
+    vim.notify("Inlay hints " .. (enabled and "enabled" or "disabled"))
+  end, "Toggle inlay hints (global)")
+
+  -- Code lens
+  map("n", "<leader>lcr", vim.lsp.codelens.run, "Run code lens")
+  map("n", "<leader>lcR", function()
+    vim.lsp.codelens.refresh({ bufnr = ev.buf })
+  end, "Refresh code lenses")
+  map("n", "<leader>lct", function()
+    vim.g.codelens_enabled = not vim.g.codelens_enabled
+    if vim.g.codelens_enabled then
+      vim.lsp.codelens.refresh({ bufnr = ev.buf })
+      vim.notify("Code lenses enabled")
+    else
+      vim.lsp.codelens.clear()
+      vim.notify("Code lenses disabled")
+    end
+  end, "Toggle code lenses")
+end
+
+---Auto-refresh code lenses for servers that support them (old-config behavior,
+---gated on the vim.g.codelens_enabled global toggle).
+---@param ev vim.api.keyset.create_autocmd.callback_args
+local function setup_codelens(ev)
+  local client = vim.lsp.get_client_by_id(ev.data.client_id)
+  if not client or not client:supports_method("textDocument/codeLens", ev.buf) then
+    return
+  end
+  vim.api.nvim_create_autocmd({ "BufEnter", "CursorHold", "InsertLeave" }, {
+    group = vim.api.nvim_create_augroup("config.lsp.codelens." .. ev.buf, { clear = true }),
+    buffer = ev.buf,
+    callback = function()
+      if vim.g.codelens_enabled then
+        vim.lsp.codelens.refresh({ bufnr = ev.buf })
+      end
+    end,
+  })
+  if vim.g.codelens_enabled then
+    vim.lsp.codelens.refresh({ bufnr = ev.buf })
+  end
 end
 
 function M.setup()
@@ -38,9 +112,18 @@ function M.setup()
     capabilities = require("blink.cmp").get_lsp_capabilities(),
   })
 
+  -- Code lenses on by default (old-config default); 'globals' in
+  -- sessionoptions carries the toggle across session restores.
+  if vim.g.codelens_enabled == nil then
+    vim.g.codelens_enabled = true
+  end
+
   vim.api.nvim_create_autocmd("LspAttach", {
     group = vim.api.nvim_create_augroup("config.lsp.attach", { clear = true }),
-    callback = on_attach_keymaps,
+    callback = function(ev)
+      on_attach_keymaps(ev)
+      setup_codelens(ev)
+    end,
   })
 
   -- Diagnostics presentation. update_in_insert follows the persisted
