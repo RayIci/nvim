@@ -15,11 +15,38 @@ end
 ---@param parsers string[] parser names from the merged language packs
 function M.apply(parsers)
   -- Always useful parsers on top of what packs declare
-  local wanted = vim.list_extend({
-    "vim", "vimdoc", "query", "markdown", "markdown_inline",
-    "regex", "bash", "diff", "gitcommit", "json", "yaml", "toml",
+  local wanted = {
+    "vim",
+    "vimdoc",
+    "query",
+    "markdown",
+    "markdown_inline",
+    "regex",
+    "bash",
+    "diff",
+    "json",
+    "yaml",
+    "toml",
+    "c",
+    "lua",
+    "luadoc",
+    "make",
+    "dockerfile",
+    "editorconfig",
+    "xml",
+    "http",
+    "gitcommit",
+    "gitignore",
+    "git_rebase",
+    "git_config",
+    "gitattributes",
     "dap_repl", -- REPL syntax highlighting (nvim-dap-repl-highlights)
-  }, parsers)
+  }
+  for _, parser in ipairs(parsers) do
+    if not vim.list_contains(wanted, parser) then
+      wanted[#wanted + 1] = parser
+    end
+  end
 
   require("nvim-treesitter").install(wanted)
 

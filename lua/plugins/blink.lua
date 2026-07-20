@@ -6,17 +6,37 @@ local M = {}
 ---VSCode-style kind icons (nerd font codicons).
 ---@type table<string, string>
 local kind_icons = {
-  Text = "󰉿", Method = "󰆧", Function = "󰊕", Constructor = "",
-  Field = "󰜢", Variable = "󰀫", Class = "󰠱", Interface = "",
-  Module = "", Property = "󰜢", Unit = "󰑭", Value = "󰎠",
-  Enum = "", Keyword = "󰌋", Snippet = "", Color = "󰏘",
-  File = "󰈙", Reference = "󰈇", Folder = "󰉋", EnumMember = "",
-  Constant = "󰏿", Struct = "󰙅", Event = "", Operator = "󰆕",
+  Text = "󰉿",
+  Method = "󰆧",
+  Function = "󰊕",
+  Constructor = "",
+  Field = "󰜢",
+  Variable = "󰀫",
+  Class = "󰠱",
+  Interface = "",
+  Module = "",
+  Property = "󰜢",
+  Unit = "󰑭",
+  Value = "󰎠",
+  Enum = "",
+  Keyword = "󰌋",
+  Snippet = "",
+  Color = "󰏘",
+  File = "󰈙",
+  Reference = "󰈇",
+  Folder = "󰉋",
+  EnumMember = "",
+  Constant = "󰏿",
+  Struct = "󰙅",
+  Event = "",
+  Operator = "󰆕",
   TypeParameter = "",
 }
 
-function M.setup()
-  require("blink.cmp").setup({
+---Base config, finalized in apply() after language packs contribute sources.
+---@return table
+local function base_config()
+  return {
     -- C-y accept, C-space docs, C-n/C-p navigate, C-e hide, C-k signature toggle
     keymap = { preset = "default" },
     -- DAP buffers (repl, watches, hover) are prompt buffers, excluded by
@@ -73,8 +93,10 @@ function M.setup()
     },
     snippets = { preset = "default" }, -- native vim.snippet + friendly-snippets
     fuzzy = { implementation = "prefer_rust_with_warning" },
-  })
+  }
+end
 
+function M.setup()
   -- cmp-dap errors when no session (nil capabilities) and may lack "." in its
   -- trigger characters — ported guard from the old config's nilguard fix.
   local ok, cmp_dap = pcall(require, "cmp_dap")
@@ -91,6 +113,21 @@ function M.setup()
       return vim.list_extend({ "." }, triggers)
     end
   end
+end
+
+---Merge language-pack completion contributions and run the real blink setup.
+---blink.cmp's config is static after setup(), so setup is deferred to here —
+---langs.setup() always calls this exactly once (possibly with empty tables).
+---@param completion LangCompletion from the merged language packs
+function M.apply(completion)
+  local config = base_config()
+  config.sources.providers =
+    vim.tbl_deep_extend("force", config.sources.providers, completion.providers or {})
+  for ft, sources in pairs(completion.per_filetype or {}) do
+    config.sources.per_filetype[ft] = sources
+  end
+  vim.list_extend(config.sources.default, completion.default or {})
+  require("blink.cmp").setup(config)
 end
 
 return M

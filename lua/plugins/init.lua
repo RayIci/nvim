@@ -13,6 +13,7 @@ require("plugins.conform").setup()
 require("plugins.lint").setup()
 require("plugins.dap").setup()
 require("plugins.overseer").setup()
+require("plugins.neotest").setup()
 require("plugins.toggleterm").setup()
 
 -- AI

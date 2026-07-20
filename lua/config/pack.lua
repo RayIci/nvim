@@ -57,6 +57,7 @@ vim.pack.add({
   gh("nvim-neotest/nvim-nio"),
   gh("mfussenegger/nvim-dap-python"),
   gh("stevearc/overseer.nvim"),
+  gh("nvim-neotest/neotest"),
 
   -- Git & AI
   gh("lewis6991/gitsigns.nvim"),
