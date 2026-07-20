@@ -89,6 +89,9 @@ vim.pack.add({
   gh("lukas-reineke/indent-blankline.nvim"),
   gh("nvim-lualine/lualine.nvim"),
   gh("akinsho/bufferline.nvim"),
+  -- Winbar breadcrumbs (VSCode-style symbol path at cursor)
+  gh("SmiteshP/nvim-navic"),
+  gh("utilyre/barbecue.nvim"),
   gh("nvim-neo-tree/neo-tree.nvim"),
   gh("akinsho/toggleterm.nvim"),
   gh("tiagovla/scope.nvim"),
@@ -102,7 +105,7 @@ vim.pack.add({
   gh("HiPhish/rainbow-delimiters.nvim"),
   gh("NMAC427/guess-indent.nvim"),
   gh("max397574/better-escape.nvim"),
-  gh("mg979/vim-visual-multi"),
+  { src = gh("jake-stewart/multicursor.nvim"), version = "1.0" },
 
   -- Themes
   { src = gh("catppuccin/nvim"), name = "catppuccin" },

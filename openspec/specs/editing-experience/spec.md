@@ -105,11 +105,15 @@ The configuration SHALL indent automatically using treesitter `indentexpr` for s
 - **THEN** new lines in that buffer use 2-space indentation
 
 ### Requirement: Multi-cursor editing
-The configuration SHALL provide multi-cursor editing via vim-visual-multi: `<C-n>` selects the word under cursor and adds the next occurrence per press, `q` skips the current occurrence, with all regions highlighted and edits reflected on every cursor in real time.
+The configuration SHALL provide multi-cursor editing via `jake-stewart/multicursor.nvim`: `<C-n>` (normal and visual) selects the word under the cursor and adds the next matching occurrence per press, `<C-p>` adds the previous match, `q` skips the current match and jumps to the next, `<C-Up>`/`<C-Down>` add a cursor on the line above/below, `<C-Left>`/`<C-Right>` rotate the main cursor, `<leader>ma` adds cursors to all matches, visual-mode `<leader>m` helpers split/match/insert/append across the selection, `<leader>mx` deletes the current cursor, and `<Esc>` clears all cursors (or re-enables them when disabled). The `q` and `<Esc>` bindings live in a buffer-local keymap layer active only while cursors exist, so they take precedence over global mappings (e.g. `<Esc>` → nohlsearch) during a session and revert afterwards. All regions are highlighted and edits are reflected on every cursor in real time.
 
 #### Scenario: Add and skip occurrences
 - **WHEN** the user presses `<C-n>` three times on a word and `q` once
 - **THEN** three occurrences are selected (the skipped one excluded) and typing a change applies to all selected occurrences live
+
+#### Scenario: Line cursors and clear
+- **WHEN** the user presses `<C-Down>` twice to add cursors below and then `<Esc>`
+- **THEN** cursors are added on the two lines below and `<Esc>` clears all extra cursors, returning to a single cursor
 
 ### Requirement: Reference navigation
 The configuration SHALL highlight other references of the symbol under the cursor (vim-illuminate) and provide next/previous-reference keymaps.

@@ -219,7 +219,9 @@ return {
   treesitter = { "c_sharp" },
   lsp = { roslyn = {} },
   formatters = { cs = { "csharpier" } },
-  mason = { "roslyn", "csharpier", "netcoredbg" },
+  -- The roslyn server is the mason package `roslyn-language-server` (mason
+  -- renamed it from `roslyn`); the LSP-server name below stays `roslyn`.
+  mason = { "roslyn-language-server", "csharpier", "netcoredbg" },
   packs = {
     { src = "seblyng/roslyn.nvim" },
     { src = "GustavEikaas/easy-dotnet.nvim" },

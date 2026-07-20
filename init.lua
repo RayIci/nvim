@@ -3,6 +3,7 @@
 require("config.options")
 require("config.pack")
 require("plugins")
+require("config.clipboard") -- after plugins so its startup notify renders via noice
 require("langs").setup()
 require("config.keymaps")
 require("config.autocmds")

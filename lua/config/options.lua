@@ -44,7 +44,5 @@ o.inccommand = "split"
 -- persists pins in vim.g.BufferlinePinnedBuffers and re-pins on SessionLoadPost.
 o.sessionoptions = "blank,buffers,curdir,folds,help,tabpages,winsize,winpos,terminal,localoptions,globals"
 
--- System clipboard
-vim.schedule(function()
-  o.clipboard = "unnamedplus"
-end)
+-- System clipboard: provider selection + unnamedplus live in config.clipboard,
+-- required from init.lua after plugins load.
