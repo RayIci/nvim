@@ -70,39 +70,28 @@ local function on_attach_keymaps(ev)
   -- Code lens
   map("n", "<leader>lcr", vim.lsp.codelens.run, "Run code lens")
   map("n", "<leader>lcR", function()
-    vim.lsp.codelens.refresh({ bufnr = ev.buf })
+    -- enable(true) re-attaches the provider and triggers a refresh.
+    vim.lsp.codelens.enable(true, { bufnr = ev.buf })
   end, "Refresh code lenses")
   map("n", "<leader>lct", function()
     vim.g.codelens_enabled = not vim.g.codelens_enabled
-    if vim.g.codelens_enabled then
-      vim.lsp.codelens.refresh({ bufnr = ev.buf })
-      vim.notify("Code lenses enabled")
-    else
-      vim.lsp.codelens.clear()
-      vim.notify("Code lenses disabled")
-    end
+    vim.lsp.codelens.enable(vim.g.codelens_enabled, { bufnr = ev.buf })
+    vim.notify("Code lenses " .. (vim.g.codelens_enabled and "enabled" or "disabled"))
   end, "Toggle code lenses")
 end
 
----Auto-refresh code lenses for servers that support them (old-config behavior,
----gated on the vim.g.codelens_enabled global toggle).
+---Enable code lenses for servers that support them, gated on the
+---vim.g.codelens_enabled global toggle. On 0.12 vim.lsp.codelens.enable(true)
+---attaches an auto-refreshing provider (refreshes on buffer changes), so no
+---manual refresh-on-events autocmd is needed.
 ---@param ev vim.api.keyset.create_autocmd.callback_args
 local function setup_codelens(ev)
   local client = vim.lsp.get_client_by_id(ev.data.client_id)
   if not client or not client:supports_method("textDocument/codeLens", ev.buf) then
     return
   end
-  vim.api.nvim_create_autocmd({ "BufEnter", "CursorHold", "InsertLeave" }, {
-    group = vim.api.nvim_create_augroup("config.lsp.codelens." .. ev.buf, { clear = true }),
-    buffer = ev.buf,
-    callback = function()
-      if vim.g.codelens_enabled then
-        vim.lsp.codelens.refresh({ bufnr = ev.buf })
-      end
-    end,
-  })
   if vim.g.codelens_enabled then
-    vim.lsp.codelens.refresh({ bufnr = ev.buf })
+    vim.lsp.codelens.enable(true, { bufnr = ev.buf })
   end
 end
 

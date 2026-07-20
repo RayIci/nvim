@@ -125,11 +125,9 @@ return {
       on_attach = function(_, bufnr)
         vim.lsp.inlay_hint.enable(true, { bufnr = bufnr })
 
-        vim.lsp.codelens.refresh()
-        vim.api.nvim_create_autocmd({ "BufEnter", "BufWritePost" }, {
-          buffer = bufnr,
-          callback = vim.lsp.codelens.refresh,
-        })
+        -- 0.12: enable(true) attaches an auto-refreshing provider, replacing
+        -- the deprecated refresh() + manual BufEnter/BufWritePost autocmd.
+        vim.lsp.codelens.enable(true, { bufnr = bufnr })
 
         -- Registers the "java" DAP adapter type; enables hot-code replace
         require("jdtls").setup_dap({ hotcodereplace = "auto" })
