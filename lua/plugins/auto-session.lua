@@ -180,6 +180,10 @@ function M.setup()
     show_auto_restore_notif = false,
     -- Keep plugin windows out of saved sessions
     bypass_save_filetypes = { "neo-tree", "trouble", "OverseerList" },
+    -- scope.nvim per-tab buffer state rides the session as a global variable
+    -- ('globals' is in sessionoptions), old-config integration.
+    pre_save_cmds = { "ScopeSaveState" },
+    pre_restore_cmds = { "ScopeLoadState" },
     post_restore_cmds = {
       -- Reconcile first: it re-adds/drops buffers changed since the (possibly
       -- stale) session save and seeds fresh pin data for the sync below.

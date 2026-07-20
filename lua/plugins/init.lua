@@ -22,6 +22,10 @@ require("plugins.copilot-chat").setup()
 -- Git
 require("plugins.gitsigns").setup()
 require("plugins.lazygit").setup()
+require("plugins.diffview").setup()
+require("plugins.neogit").setup()
+require("plugins.octo").setup()
+require("plugins.git-conflict").setup()
 
 -- Pickers / navigation
 require("plugins.telescope").setup()
@@ -38,6 +42,7 @@ require("plugins.todo-comments").setup()
 require("plugins.indent").setup()
 require("plugins.lualine").setup()
 require("plugins.bufferline").setup()
+require("plugins.scope").setup()
 require("plugins.neotree").setup()
 require("plugins.auto-session").setup()
 

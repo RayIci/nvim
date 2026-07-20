@@ -41,6 +41,10 @@
       "rev": "2a849bc7bec4d175524c332c20d48ca9ece735df",
       "src": "https://github.com/zbirenbaum/copilot.lua"
     },
+    "diffview.nvim": {
+      "rev": "4516612fe98ff56ae0415a259ff6361a89419b0a",
+      "src": "https://github.com/sindrets/diffview.nvim"
+    },
     "everforest-nvim": {
       "rev": "d235ca0aa6a29546e661a020e2618612acbbffbe",
       "src": "https://github.com/neanias/everforest-nvim"
@@ -52,6 +56,10 @@
     "friendly-snippets": {
       "rev": "6cd7280adead7f586db6fccbd15d2cac7e2188b9",
       "src": "https://github.com/rafamadriz/friendly-snippets"
+    },
+    "git-conflict.nvim": {
+      "rev": "a1badcd070d176172940eb55d9d59029dad1c5a6",
+      "src": "https://github.com/akinsho/git-conflict.nvim"
     },
     "gitsigns.nvim": {
       "rev": "31d6fb2d618bca1482b9f274751ead5f03461408",
@@ -96,6 +104,10 @@
     "neo-tree.nvim": {
       "rev": "b01ee1769144c4491ea44bc329cb84040e9793be",
       "src": "https://github.com/nvim-neo-tree/neo-tree.nvim"
+    },
+    "neogit": {
+      "rev": "f8674ec894315c02449b61c9de9a116c5aafeb90",
+      "src": "https://github.com/NeogitOrg/neogit"
     },
     "nightfox.nvim": {
       "rev": "4dacd3f0185a2227bdf3b6c0975a8f0bf87cac9a",
@@ -166,6 +178,11 @@
       "rev": "6382540b2ae5de6c793d4aa2e3fe6dbb518505ec",
       "src": "https://github.com/s1n7ax/nvim-window-picker"
     },
+    "octo.nvim": {
+      "rev": "7566ab21843bf0de721f72891733c0372738d3ee",
+      "src": "https://github.com/pwntester/octo.nvim",
+      "version": "'7566ab21843bf0de721f72891733c0372738d3ee'"
+    },
     "onedark.nvim": {
       "rev": "df4792accde9db0043121f32628bcf8e645d9aea",
       "src": "https://github.com/navarasu/onedark.nvim"
@@ -189,6 +206,10 @@
     "rose-pine": {
       "rev": "ff483051a47e27d84bdef47703538df1ed9f4a47",
       "src": "https://github.com/rose-pine/neovim"
+    },
+    "scope.nvim": {
+      "rev": "228aabdb1b9cc74f0c0ccec88e79873857236e49",
+      "src": "https://github.com/tiagovla/scope.nvim"
     },
     "telescope-fzf-native.nvim": {
       "rev": "b25b749b9db64d375d782094e2b9dce53ad53a40",

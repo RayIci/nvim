@@ -60,6 +60,11 @@ vim.pack.add({
 
   -- Git & AI
   gh("lewis6991/gitsigns.nvim"),
+  gh("sindrets/diffview.nvim"),
+  gh("NeogitOrg/neogit"),
+  gh("akinsho/git-conflict.nvim"),
+  -- octo: pinned to the old-config commit — newer versions are bugged.
+  { src = gh("pwntester/octo.nvim"), version = "7566ab21843bf0de721f72891733c0372738d3ee" },
   gh("zbirenbaum/copilot.lua"),
   gh("CopilotC-Nvim/CopilotChat.nvim"),
 
@@ -85,6 +90,7 @@ vim.pack.add({
   gh("akinsho/bufferline.nvim"),
   gh("nvim-neo-tree/neo-tree.nvim"),
   gh("akinsho/toggleterm.nvim"),
+  gh("tiagovla/scope.nvim"),
   gh("s1n7ax/nvim-window-picker"),
   gh("MeanderingProgrammer/render-markdown.nvim"),
   gh("rmagatti/auto-session"),

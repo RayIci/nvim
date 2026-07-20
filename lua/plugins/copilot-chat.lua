@@ -17,6 +17,12 @@ local commit_prompt = table.concat({
 function M.setup()
   require("CopilotChat").setup({
     window = { layout = "vertical", width = 0.4 },
+    mappings = {
+      -- Default insert-mode close is <C-c>; disable it so leaving insert
+      -- mode with <C-c> can't dismiss the chat. q still closes from normal.
+      close = { normal = "q", insert = "" },
+      show_diffs = { full_diff = true },
+    },
   })
 
   local map = vim.keymap.set

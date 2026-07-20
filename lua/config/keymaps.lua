@@ -85,6 +85,30 @@ end
 map("n", "<leader>xw", close_buffer, { desc = "Close buffer (keep window)" })
 map("n", "<leader>bd", close_buffer, { desc = "Close buffer (keep window)" })
 
+-- Tabs (<leader>j group; built-in gt/gT stay unmapped so {count}gt keeps working)
+map("n", "<leader>j<Tab>", "<cmd>tabnext<cr>", { desc = "Next tab" })
+map("n", "<leader>j<S-Tab>", "<cmd>tabprevious<cr>", { desc = "Previous tab" })
+map("n", "<leader>jf", "<cmd>tabfirst<cr>", { desc = "First tab" })
+map("n", "<leader>jl", "<cmd>tablast<cr>", { desc = "Last tab" })
+map("n", "<leader>jc", "<cmd>tabnew<cr>", { desc = "Create new tab" })
+map("n", "<leader>js", function()
+  -- With scope.nvim, tabnew starts an empty scope; carrying the buffer over
+  -- explicitly replaces the old `tabnew | BufferLineCyclePrev` trick.
+  local buf = vim.api.nvim_get_current_buf()
+  vim.cmd.tabnew()
+  vim.api.nvim_set_current_buf(buf)
+end, { desc = "Open current buffer in new tab" })
+map("n", "<leader>jx", "<cmd>tabclose<cr>", { desc = "Close current tab" })
+map("n", "<leader>xj", "<cmd>tabclose<cr>", { desc = "Close current tab" })
+map("n", "<leader>jX", "<cmd>tabonly<cr>", { desc = "Close all other tabs" })
+map("n", "<leader>jm", "<cmd>tabmove +1<cr>", { desc = "Move tab right" })
+map("n", "<leader>jM", "<cmd>tabmove -1<cr>", { desc = "Move tab left" })
+map("n", "<leader>j0", "<cmd>tabmove 0<cr>", { desc = "Move tab to first position" })
+map("n", "<leader>j$", "<cmd>tabmove $<cr>", { desc = "Move tab to last position" })
+for i = 1, 9 do
+  map("n", "<leader>j" .. i, i .. "gt", { desc = "Go to tab " .. i })
+end
+
 -- Built-in undo tree (Neovim 0.12, ships as an optional builtin package)
 vim.cmd.packadd("nvim.undotree")
 map("n", "<leader>uu", "<cmd>Undotree<cr>", { desc = "Undo tree" })
