@@ -300,9 +300,17 @@ return {
       args = { "format", "--stdin-path", "$FILENAME" },
     }
 
-    -- Everything below spawns `dotnet`; skip it (silently) when the SDK is
-    -- absent so roslyn.nvim/easy-dotnet don't error at startup.
+    -- Everything below spawns `dotnet`. When the SDK is absent, skip it (so
+    -- roslyn.nvim/easy-dotnet don't throw a raw "not executable" error that
+    -- forces the hit-enter prompt) and surface a non-blocking reminder toast
+    -- instead — deferred vim.notify goes through noice and never prompts.
     if not has_dotnet then
+      vim.schedule(function()
+        vim.notify(
+          "dotnet not found — C#/roslyn tooling disabled. Install the .NET SDK to enable it.",
+          vim.log.levels.WARN
+        )
+      end)
       return
     end
 
