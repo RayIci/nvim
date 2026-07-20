@@ -117,5 +117,13 @@ vim.pack.add({
   gh("navarasu/onedark.nvim"),
   gh("neanias/everforest-nvim"),
   gh("shaunsingh/nord.nvim"),
+  gh("projekt0n/github-nvim-theme"),
+  gh("Mofiqul/dracula.nvim"),
+  gh("nyoom-engineering/oxocarbon.nvim"),
+  gh("sainnhe/sonokai"),
+  gh("bluz71/vim-nightfly-colors"),
+  gh("Shatur/neovim-ayu"),
+  gh("marko-cerovac/material.nvim"),
+  gh("scottmckendry/cyberdream.nvim"),
   gh("zaldih/themery.nvim"),
 }, { confirm = false })
