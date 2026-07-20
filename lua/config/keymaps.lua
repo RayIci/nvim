@@ -37,6 +37,12 @@ map("n", "<C-Right>", "<cmd>vertical resize +2<cr>", { desc = "Grow window width
 map("v", "J", ":m '>+1<cr>gv=gv", { desc = "Move selection down" })
 map("v", "K", ":m '<-2<cr>gv=gv", { desc = "Move selection up" })
 
+-- Move the current line (normal mode), mirroring the visual-mode maps above.
+-- NOTE: this shadows the default J (join lines) and K (keyword lookup); LSP
+-- hover already lives on H (see plugins/lsp.lua), and join stays on gJ.
+map("n", "J", "<cmd>m .+1<cr>==", { desc = "Move line down" })
+map("n", "K", "<cmd>m .-2<cr>==", { desc = "Move line up" })
+
 -- Keep cursor centered on half-page jumps and search hits
 map("n", "<C-d>", "<C-d>zz")
 map("n", "<C-u>", "<C-u>zz")
