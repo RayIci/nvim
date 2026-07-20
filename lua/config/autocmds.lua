@@ -43,3 +43,21 @@ vim.api.nvim_create_autocmd("FileType", {
     vim.opt_local.spell = true
   end,
 })
+
+-- Handle stale swap files automatically. Only prompt when the dead
+-- session had unsaved changes worth recovering.
+vim.api.nvim_create_autocmd("SwapExists", {
+  group = augroup("smart_swap"),
+  callback = function()
+    local info = vim.fn.swapinfo(vim.v.swapname)
+    local alive = info.pid and vim.fn.getpid() ~= info.pid and vim.uv.kill(info.pid, 0) == 0
+    if alive then
+      vim.v.swapchoice = "o" -- file open in another instance: read-only
+      vim.schedule(function()
+        vim.notify("File open in another nvim (pid " .. info.pid .. "), opened read-only", vim.log.levels.WARN)
+      end)
+    elseif info.dirty == 0 then
+      vim.v.swapchoice = "d" -- dead session, nothing unsaved: delete swap
+    end
+  end,
+})
