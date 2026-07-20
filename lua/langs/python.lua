@@ -1,5 +1,21 @@
 ---Python language pack: basedpyright (types) + ruff (lint/format) + mypy
 ---(save-time linter) + debugpy (DAP) + venv-selector + pytest via neotest.
+
+---Active virtualenv name for the statusline, or "" when none is selected or
+---venv-selector has not loaded yet (guarded so it is safe at every redraw).
+---@return string
+local function python_venv()
+  local ok, vs = pcall(require, "venv-selector")
+  if not ok then
+    return ""
+  end
+  local path = vs.venv()
+  if not path or path == "" then
+    return ""
+  end
+  return vim.fn.fnamemodify(path, ":t")
+end
+
 ---@type LangPack
 return {
   treesitter = { "python" },
@@ -48,6 +64,15 @@ return {
       runner = "pytest",
     })
   end,
+  statusline = {
+    {
+      render = python_venv,
+      cond = function()
+        return vim.bo.filetype == "python"
+      end,
+      icon = "🐍",
+    },
+  },
   setup = function()
     require("which-key").add({
       { "<leader>-", group = "Language" },
@@ -55,9 +80,36 @@ return {
     })
     vim.keymap.set("n", "<leader>-pp", "<cmd>VenvSelect<cr>", { desc = "Select Python Virtualenv" })
 
-    -- pymple + venv-selector are ~60ms of startup and only relevant once a
-    -- Python buffer exists — defer their setup to the first one (vim.pack has
-    -- no lazy loading, so the plugins are sourced, but their setup is not).
+    -- venv-selector is set up eagerly (not deferred to the first Python
+    -- FileType). Its cached-venv restore hangs off the Python buffer's own
+    -- FileType/BufEnter autocmds; deferring setup to that same FileType arms
+    -- those autocmds *after* the buffer's events have already fired, so the
+    -- cached venv never restores until an unrelated later buffer switch. Setup
+    -- is cheap (registering autocmds); the picker itself stays lazy.
+    require("venv-selector").setup({
+      options = {
+        picker = "telescope",
+        -- Refresh the statusline whenever a venv (de)activates — manual
+        -- VenvSelect or an automatic cache restore — so the 🐍 indicator
+        -- reflects the change immediately instead of only on the next redraw.
+        on_venv_activate_callback = function()
+          pcall(function()
+            require("lualine").refresh()
+          end)
+        end,
+        on_telescope_result_callback = function(data)
+          -- Picker results can carry a trailing newline; strip it.
+          if data then
+            data = data:gsub("[\r\n]+$", "")
+          end
+          return data
+        end,
+      },
+    })
+
+    -- pymple is heavier and only relevant once a Python buffer exists; keep it
+    -- deferred to the first one (vim.pack has no lazy loading, so the plugin is
+    -- sourced, but its setup is not).
     local group = vim.api.nvim_create_augroup("langs.python.setup", { clear = true })
     vim.api.nvim_create_autocmd("FileType", {
       group = group,
@@ -65,18 +117,6 @@ return {
       once = true,
       callback = function()
         require("pymple").setup()
-        require("venv-selector").setup({
-          options = {
-            picker = "telescope",
-            on_telescope_result_callback = function(data)
-              -- Picker results can carry a trailing newline; strip it.
-              if data then
-                data = data:gsub("[\r\n]+$", "")
-              end
-              return data
-            end,
-          },
-        })
       end,
     })
 

@@ -22,6 +22,15 @@
 ---@field per_filetype? table<string, string[]> filetype -> source names
 ---@field default? string[] source names appended to the default list
 
+---A statusline widget a language pack contributes to lualine (rendered by the
+---lualine bridge component). `render` is evaluated at draw time.
+---@class LangStatusWidget
+---@field render fun(): string text to show ("" to render nothing)
+---@field cond? fun(): boolean gate (e.g. filetype check); shown only when true
+---@field icon? string prefixed before the render output
+---@field color? table advisory; the bridge renders one component, so a widget
+---  wanting its own color embeds a `%#Group#…%*` highlight in `render` instead
+
 ---One drop-in language definition. Every field is optional.
 ---@class LangPack
 ---@field treesitter? string[] parser names to install and enable
@@ -33,6 +42,7 @@
 ---@field packs? LangPackPlugin[] plugins to install via vim.pack
 ---@field test? fun(): table|table[] factory returning one or more neotest adapters
 ---@field completion? LangCompletion blink.cmp source contributions
+---@field statusline? LangStatusWidget[] statusline widgets contributed to lualine
 ---@field setup? fun() run after all subsystem wiring (e.g. register terminal hooks)
 
 ---Merged view over all packs, consumed by lua/plugins/*.
@@ -46,6 +56,7 @@
 ---@field packs LangPackPlugin[]
 ---@field test (fun(): table|table[])[]
 ---@field completion LangCompletion
+---@field statusline LangStatusWidget[]
 ---@field setup fun()[]
 
 local M = {}
@@ -61,6 +72,7 @@ M.merged = {
   packs = {},
   test = {},
   completion = { providers = {}, per_filetype = {}, default = {} },
+  statusline = {},
   setup = {},
 }
 
@@ -130,6 +142,9 @@ local function collect()
           end
           extend_unique(merged.completion.default, pack.completion.default or {})
         end
+        for _, widget in ipairs(pack.statusline or {}) do
+          merged.statusline[#merged.statusline + 1] = widget
+        end
         if pack.setup then
           merged.setup[#merged.setup + 1] = pack.setup
         end
@@ -197,6 +212,7 @@ function M.setup()
   require("plugins.mason").apply(merged.mason)
   require("plugins.blink").apply(merged.completion)
   require("plugins.neotest").apply(merged.test)
+  require("plugins.lualine").apply(merged.statusline)
 
   -- Pack-level setup runs last, against fully-wired subsystems.
   for _, setup in ipairs(merged.setup) do
