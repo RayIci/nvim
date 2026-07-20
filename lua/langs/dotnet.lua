@@ -214,10 +214,15 @@ local function register_commands()
   )
 end
 
+-- roslyn.nvim and easy-dotnet spawn the `dotnet` CLI; without the SDK their
+-- setup throws at startup ("'dotnet' is not executable"). Gate that wiring so
+-- the pack stays silent on machines without .NET (mason still installs tools).
+local has_dotnet = vim.fn.executable("dotnet") == 1
+
 ---@type LangPack
 return {
   treesitter = { "c_sharp" },
-  lsp = { roslyn = {} },
+  lsp = has_dotnet and { roslyn = {} } or {},
   formatters = { cs = { "csharpier" } },
   -- The roslyn server is the mason package `roslyn-language-server` (mason
   -- renamed it from `roslyn`); the LSP-server name below stays `roslyn`.
@@ -288,13 +293,20 @@ return {
     })
   end,
   setup = function()
-    require("roslyn").setup({})
-
-    -- Configure csharpier to pass the file path so it can find .editorconfig;
-    -- without --stdin-path it uses default settings.
+    -- csharpier's conform args don't need the SDK; set them regardless so
+    -- formatting is configured even before .NET is installed.
+    -- (--stdin-path lets csharpier find .editorconfig; without it, defaults.)
     require("conform").formatters.csharpier = {
       args = { "format", "--stdin-path", "$FILENAME" },
     }
+
+    -- Everything below spawns `dotnet`; skip it (silently) when the SDK is
+    -- absent so roslyn.nvim/easy-dotnet don't error at startup.
+    if not has_dotnet then
+      return
+    end
+
+    require("roslyn").setup({})
 
     require("easy-dotnet").setup({
       lsp = {

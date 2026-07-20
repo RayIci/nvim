@@ -150,10 +150,19 @@ return {
   end,
   setup = function()
     if not kls_java_home then
-      vim.notify(
-        "kotlin-language-server: no Java 21 found in SDKMAN — run `sdk install java 21.0.5-tem`. KLS will crash on Java 25.",
-        vim.log.levels.WARN
-      )
+      -- Warn the first time a Kotlin buffer is opened rather than at startup,
+      -- so the message only appears when KLS is actually about to be used.
+      vim.api.nvim_create_autocmd("FileType", {
+        pattern = "kotlin",
+        once = true,
+        group = vim.api.nvim_create_augroup("langs.kotlin.java21_warn", { clear = true }),
+        callback = function()
+          vim.notify(
+            "kotlin-language-server: no Java 21 found in SDKMAN — run `sdk install java 21.0.5-tem`. KLS will crash on Java 25.",
+            vim.log.levels.WARN
+          )
+        end,
+      })
     end
 
     vim.api.nvim_create_user_command("Kotlin", function(opts)
