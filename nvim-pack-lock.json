@@ -53,6 +53,10 @@
       "rev": "b9cc88378b776f33d3ea77164716f37c3f13ef72",
       "src": "https://github.com/scottmckendry/cyberdream.nvim"
     },
+    "dataframe-preview.nvim": {
+      "rev": "b5fe9b81b90e132460af189b120c1a1295487561",
+      "src": "https://github.com/RayIci/dataframe-preview.nvim"
+    },
     "diffview.nvim": {
       "rev": "4516612fe98ff56ae0415a259ff6361a89419b0a",
       "src": "https://github.com/sindrets/diffview.nvim"

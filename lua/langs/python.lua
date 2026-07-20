@@ -57,6 +57,9 @@ return {
       end,
     },
     { src = "nvim-neotest/neotest-python" },
+    -- Live pandas DataFrame preview in a browser UI while debugging (uses DAP
+    -- eval); depends on nvim-dap (already global) + debugpy (installed above).
+    { src = "RayIci/dataframe-preview.nvim" },
   },
   test = function()
     return require("neotest-python")({
@@ -117,6 +120,7 @@ return {
       once = true,
       callback = function()
         require("pymple").setup()
+        require("dataframe-preview").setup()
       end,
     })
 
