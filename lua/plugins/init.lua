@@ -21,7 +21,7 @@ require("plugins.toggleterm").setup()
 
 -- AI
 require("plugins.copilot").setup()
-require("plugins.copilot-chat").setup()
+require("plugins.sidekick").setup()
 
 -- Git
 require("plugins.gitsigns").setup()

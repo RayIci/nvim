@@ -71,7 +71,7 @@ vim.pack.add({
   -- octo: pinned to the old-config commit — newer versions are bugged.
   { src = gh("pwntester/octo.nvim"), version = "7566ab21843bf0de721f72891733c0372738d3ee" },
   gh("zbirenbaum/copilot.lua"),
-  { src = gh("CopilotC-Nvim/CopilotChat.nvim"), version = "efa8b6ecc7016b930d13968da2a57fa2341ba6f7" },
+  gh("folke/sidekick.nvim"),
 
   -- Pickers / navigation
   -- telescope on master: 0.1.x calls the removed vim.treesitter ft_to_lang API

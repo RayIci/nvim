@@ -27,7 +27,7 @@ local exclude_filetypes = {
   "dapui_console",
   "OverseerList",
   "grug-far",
-  "copilot-chat",
+  "sidekick_terminal",
   "NeogitStatus",
   "octo",
 }
