@@ -77,7 +77,7 @@ to discard. `nvim-pack-lock.json` is committed; treat it like a lockfile.
 | Prefix | Group |
 |---|---|
 | `<leader>f` | find: files `<leader><leader>`, resume `ff`, grep `fg`, buffers `fb`, recent `fr`, diagnostics `fd`, TODOs `ft`, notifications `fn` |
-| `<leader>g` | git: lazygit `gg`, stage hunk `gs`, reset `gr`, preview `gp`, blame `gb`, draft commit msg (in gitcommit) `gm` |
+| `<leader>g` | git: lazygit `gg`, stage hunk `gs`, reset `gr`, preview `gp`, blame `gb`, draft commit msg (in gitcommit) `gm`, configure commit AI (in gitcommit) `gM` |
 | `<leader>d` | debug: continue `dc`/`F5`, breakpoint `dd`/`B`, groups: breakpoints `db*`, step `ds*` (+`F9/F10/F11`), windows `dw*`, UI `du*` (toggle `duu`), REPL `dr*` (clear `drx`, highlighted), sessions `dS*`, launch `dl*`, eval `de/dE`, hover `dh`, virtual text toggle `dv` (persisted) |
 | `<leader>c` | code: format `cf`, diagnostics float `cd`, inlay hints `ci` (LSP: `gd`, `grr`, `grn`, `gra`, `K`) |
 | `<leader>b` | buffers: pin `bp`, close others `bo`, delete `bd`/`xw`, close all `xa` / others `xA` (keep pinned+unsaved; cycle: `Tab`/`S-Tab`, `S-h`/`S-l`) |
@@ -86,14 +86,15 @@ to discard. `nvim-pack-lock.json` is committed; treat it like a lockfile.
 | `<leader>l` | lsp: code action `la`, rename `lr`, signature `lk`, outline `lo`, diagnostics `ld*`, workspace `lw*`, calls `lh*`, inlay toggle `li`, codelens `lc*` |
 | `<leader>x` | close: buffer `xw`, all `xa`, others `xA` (keep pinned/unsaved) |
 | `<leader>u` | ui: theme `ut`, rainbow toggle `ur`, format-on-save `uf`, AI toggle `ua`, undotree `uu`, live diagnostics `ud` (persisted; default: open/save/insert-leave) |
-| `<leader>a` | ai: Sidekick CLI toggle `aa`, select `as`, focus `af`, prompt picker `ap`, explain `ae`, review `ar`, diagnostics `ad`/`aD`, commit msg `am` (`gitcommit` buffers auto-insert generated text) |
+| `<leader>a` | ai: Sidekick CLI toggle `aa`, select `as`, focus `af`, prompt picker `ap`, explain `ae`, review `ar`, diagnostics `ad`/`aD`, commit msg `am` (`gitcommit` buffers auto-insert generated text), configure commit AI `aM` |
 | `<leader>s` | replace: project `sr`, word `sw` |
 | `<leader>q` | session (auto-session; auto-saves on exit, auto-restores on plain `nvim`): save `qs`, restore `qr`, search `ql`, delete `qd`, toggle autosave `qt` |
 | `<leader>T` | terminal (toggleterm, `<C-t>` toggles / `2<C-t>` numbered): toggle `Tt`, horizontal/vertical/float `Th/Tv/Tf`, all `Ta`, 1-4 `T1-T4`, name `Tn`, rename `Tr`, send line/selection `Ts`; in terminal: `jk`/`<C-\>` to normal mode |
 
-Sidekick commit generation in `gitcommit` buffers shows the selected CLI and configured model
-while it runs. Copilot defaults to `auto`, which means the Copilot CLI chooses the model; set
-`vim.g.sidekick_commit_models = { copilot = "<model>" }` before loading Sidekick to pin one.
+Sidekick commit generation in `gitcommit` buffers uses a persisted headless CLI/model setting.
+Use `<leader>aM`, `<leader>gM` in commit buffers, or `:SidekickCommitSettings` to choose
+`copilot` or `claude` and then a model scoped to that CLI. Copilot defaults to `auto`, and
+Claude defaults to `default`, which means the selected CLI chooses the model.
 
 Editing: multi-cursor `<C-n>` (skip with `q`), flash jump `s`, surround `ys/cs/ds`,
 references `]]`/`[[`, hunks `]h`/`[h`, inline AI (copilot.lua, sign in with

@@ -10,6 +10,7 @@ CopilotChat's provider path is unreliable in this environment: GitHub's Copilot 
 - Use Sidekick's default CLI/session behavior for normal AI actions: select, toggle/focus CLI, explain/review selected or current context, diagnostics, and commit-message prompt.
 - Preserve visual-selection workflows by sending Sidekick context such as `{selection}` and `{this}` through Sidekick.
 - Replace CopilotChat commit-message generation with conditional behavior: from `gitcommit` buffers, run a non-interactive CLI prompt and insert the result; outside `gitcommit` buffers, keep normal Sidekick behavior.
+- Add Neovim-accessible commit-generation settings so the user can choose the headless commit CLI (`copilot` or `claude`), choose a supported model for that CLI, and persist those choices across sessions.
 
 ## Capabilities
 
@@ -27,5 +28,6 @@ CopilotChat's provider path is unreliable in this environment: GitHub's Copilot 
 - Affected plugin modules: `lua/config/pack.lua`, `lua/plugins/init.lua`, `lua/plugins/copilot-chat.lua` removal/replacement, and a new Sidekick setup module.
 - Affected dependencies: remove or stop configuring `CopilotC-Nvim/CopilotChat.nvim`; add `folke/sidekick.nvim`; continue using `folke/snacks.nvim` for picker/notification support.
 - Affected keymaps: `<leader>aa`, `<leader>ae`, `<leader>ar`, and commit-message generation mappings move from CopilotChat to Sidekick.
+- Affected keymaps/settings: add a commit-generation settings picker under the AI/git keymaps while keeping normal Sidekick CLI selection unchanged.
 - Affected specs: `openspec/specs/editing-experience/spec.md`.
 - Affected specs: `openspec/specs/git-integration/spec.md`.

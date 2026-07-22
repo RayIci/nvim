@@ -48,3 +48,12 @@
 
 - [x] 8.1 Show a persistent spinner notification while headless commit generation is running.
 - [x] 8.2 Include the selected tool and configured model label in the generation status.
+
+## 9. Commit generation settings
+
+- [x] 9.1 Add persisted preference storage for the headless commit-generation CLI and model.
+- [x] 9.2 Add a Neovim command/keymap that lets the user choose `copilot` or `claude` for commit generation.
+- [x] 9.3 Add model pickers whose choices are scoped to the selected CLI, including automatic/default options.
+- [x] 9.4 Make headless commit generation use the persisted CLI/model instead of only the active Sidekick session.
+- [x] 9.5 Pass concrete model IDs to supported CLIs and omit model flags for automatic/default selections.
+- [x] 9.6 Document the settings behavior and validate the updated Sidekick configuration.

@@ -14,6 +14,7 @@ The observed failure mode is not caused by the user's Copilot inline-completion 
 - Preserve visual-selection workflows for explain/review/fix prompts.
 - Keep the `<leader>a` key namespace as the AI command tree.
 - Keep normal Sidekick prompts interactive, while making commit-message generation auto-insert only from `gitcommit` buffers.
+- Let the user configure the headless commit-message CLI and model from Neovim, and persist those choices across Neovim sessions.
 
 **Non-Goals:**
 
@@ -61,10 +62,26 @@ The current CopilotChat commit generator auto-runs in empty `gitcommit` buffers 
 
 Commit-message generation is the exception when invoked from a `gitcommit` buffer: it should run the selected or active Sidekick CLI tool in non-interactive mode, include the staged diff directly in the prompt, and insert the returned message into the commit buffer. When the same commit-message keymap is invoked outside a `gitcommit` buffer, it should keep normal Sidekick behavior and send the commit prompt to Sidekick.
 
+### Persist dedicated commit-generation CLI and model preferences
+
+Headless commit-message generation should have its own persisted settings instead of relying only on the currently attached Sidekick session. Normal Sidekick chat/session behavior remains native, but the commit generator needs deterministic headless execution.
+
+Proposed behavior:
+
+- A Neovim command/keymap opens a settings picker for commit generation.
+- The user first chooses the CLI tool from supported headless tools: `copilot` or `claude`.
+- The model picker then shows only models supported by the selected CLI, including an `auto`/default option when the CLI supports choosing automatically.
+- The chosen CLI and model persist via the existing preference-storage pattern so they survive Neovim restarts and work across sessions.
+- The commit generator uses the persisted CLI/model by default, while still falling back to prompting when no supported tool is installed or configured.
+- The spinner/status message shows the persisted CLI/model that will be used.
+
+This differs from normal Sidekick selection intentionally: normal AI actions continue to use Sidekick's own selector and session attachment, while commit-message generation uses the stored headless tool settings because it inserts directly into the commit buffer.
+
 ## Risks / Trade-offs
 
 - [Risk] Sidekick changes the UX from native chat buffer to CLI terminal. → Mitigation: keep keymaps under the same `<leader>a` namespace and provide prompt helpers so daily actions remain one keypress.
 - [Risk] Headless commit generation depends on the default CLI supporting non-interactive prompt mode. → Mitigation: support Copilot CLI and Claude CLI explicitly, and fall back to normal Sidekick prompting for unsupported tools.
+- [Risk] Model names and CLI flags can drift as AI CLIs evolve. → Mitigation: keep model lists small and explicit per CLI, include an automatic/default option, and pass model flags only when a concrete model is selected.
 - [Risk] Claude/Copilot CLI availability differs between machines. → Mitigation: Sidekick's selector shows installed/missing tools and can open install URLs.
 - [Risk] Sidekick NES overlaps with existing Copilot inline suggestions. → Mitigation: disable NES by default in this change.
 - [Risk] Removing CopilotChat removes its model picker and native prompt commands. → Mitigation: Sidekick prompt library and custom prompts cover explain/review/fix/diagnostics/commit flows.
@@ -77,12 +94,12 @@ Commit-message generation is the exception when invoked from a `gitcommit` buffe
 4. Add `<leader>a` keymaps for Sidekick actions using Sidekick's native CLI API.
 5. Configure Sidekick CLI window/layout, prompt set, file watching, and Snacks picker usage.
 6. Add commit-buffer-only headless generation that inserts CLI output into the commit buffer.
-7. Keep `copilot.lua` unchanged and leave Sidekick NES disabled by default.
-8. Validate startup and basic Sidekick command loading.
+7. Add persisted commit-generation settings for CLI/model selection and expose them through Neovim commands/keymaps.
+8. Keep `copilot.lua` unchanged and leave Sidekick NES disabled by default.
+9. Validate startup and basic Sidekick command loading.
 
 Rollback is straightforward: restore the CopilotChat plugin/module/keymaps and remove Sidekick/default-CLI config.
 
 ## Open Questions
 
-- Should the first implementation include explicit `claude` and `copilot` quick-toggle keymaps in addition to Sidekick's selector?
-- After the interactive workflow is tested, should commit-message generation regain automatic buffer insertion through a dedicated CLI-backed command?
+- Which exact Copilot and Claude model IDs should be listed initially beyond the default/auto choice?
