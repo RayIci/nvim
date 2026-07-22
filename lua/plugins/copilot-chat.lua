@@ -16,6 +16,7 @@ local commit_prompt = table.concat({
 
 function M.setup()
   require("CopilotChat").setup({
+    model = "gpt-5-mini",
     window = { layout = "vertical", width = 0.4 },
     mappings = {
       -- Default insert-mode close is <C-c>; disable it so leaving insert

@@ -104,6 +104,22 @@ The configuration SHALL indent automatically using treesitter `indentexpr` for s
 - **WHEN** a file indented with 2 spaces is opened in a config defaulting to 4
 - **THEN** new lines in that buffer use 2-space indentation
 
+### Requirement: Smart folding
+The configuration SHALL provide smart code folding backed by LSP folding ranges when available, with Tree-sitter and indentation fallbacks for buffers where LSP folding is unavailable or incomplete. Folds SHALL remain open by default when a buffer is opened, and the editor SHALL show a small fold column with open/closed fold indicators.
+
+#### Scenario: File opens expanded
+- **WHEN** a source file is opened
+- **THEN** fold ranges are available for fold commands
+- **AND** the file content is not automatically collapsed
+
+#### Scenario: Folding provider fallback
+- **WHEN** the attached LSP does not provide folding ranges for the current buffer
+- **THEN** the configuration falls back to Tree-sitter or indentation-based folds instead of disabling folding entirely
+
+#### Scenario: Provider-safe fold commands
+- **WHEN** the user invokes the configured open-all or close-all fold command
+- **THEN** folds are opened or closed without lowering the high default fold level needed for provider-managed folds
+
 ### Requirement: Multi-cursor editing
 The configuration SHALL provide multi-cursor editing via `jake-stewart/multicursor.nvim`: `<C-n>` (normal and visual) selects the word under the cursor and adds the next matching occurrence per press, `<C-p>` adds the previous match, `q` skips the current match and jumps to the next, `<C-Up>`/`<C-Down>` add a cursor on the line above/below, `<C-Left>`/`<C-Right>` rotate the main cursor, `<leader>ma` adds cursors to all matches, visual-mode `<leader>m` helpers split/match/insert/append across the selection, `<leader>mx` deletes the current cursor, and `<Esc>` clears all cursors (or re-enables them when disabled). The `q` and `<Esc>` bindings live in a buffer-local keymap layer active only while cursors exist, so they take precedence over global mappings (e.g. `<Esc>` → nohlsearch) during a session and revert afterwards. All regions are highlighted and edits are reflected on every cursor in real time.
 
@@ -150,3 +166,14 @@ The CopilotChat window SHALL NOT close on `<C-c>` from insert mode (`mappings.cl
 #### Scenario: Close from normal mode
 - **WHEN** the user presses `q` in the CopilotChat window in normal mode
 - **THEN** the chat window closes
+
+### Requirement: CopilotChat default model
+CopilotChat SHALL use `gpt-5-mini` as its configured default model while preserving the existing CopilotChat window behavior, chat keymaps, diff display, and headless commit-message generation flow.
+
+#### Scenario: Chat uses lightweight default
+- **WHEN** the user opens CopilotChat or invokes a CopilotChat prompt without specifying another model
+- **THEN** CopilotChat uses `gpt-5-mini` as the default model
+
+#### Scenario: Existing chat window behavior remains
+- **WHEN** the user presses `<C-c>` in insert mode inside the CopilotChat window
+- **THEN** insert mode exits and the chat window remains open

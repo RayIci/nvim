@@ -31,6 +31,7 @@ vim.pack.add({
   gh("nvim-lua/plenary.nvim"),
   gh("MunifTanjim/nui.nvim"),
   gh("nvim-tree/nvim-web-devicons"),
+  gh("kevinhwang91/promise-async"),
 
   -- LSP / tooling
   gh("neovim/nvim-lspconfig"),
@@ -38,6 +39,9 @@ vim.pack.add({
   gh("WhoIsSethDaniel/mason-tool-installer.nvim"),
   { src = gh("nvim-treesitter/nvim-treesitter"), version = "main" },
   gh("folke/lazydev.nvim"),
+  gh("kevinhwang91/nvim-ufo"),
+  gh("kosayoda/nvim-lightbulb"),
+  gh("nvimdev/lspsaga.nvim"),
 
   -- Completion
   { src = gh("Saghen/blink.cmp"), version = vim.version.range("1") },

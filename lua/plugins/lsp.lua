@@ -14,13 +14,13 @@ local function on_attach_keymaps(ev)
   end
 
   local tb = require("telescope.builtin")
-  map("n", "gd", tb.lsp_definitions, "Goto definition")
+  map("n", "gd", "<cmd>Lspsaga goto_definition<cr>", "Goto definition")
   map("n", "gD", vim.lsp.buf.declaration, "Goto declaration")
-  map("n", "grr", tb.lsp_references, "References")
-  map("n", "gri", tb.lsp_implementations, "Goto implementation")
-  map("n", "grt", tb.lsp_type_definitions, "Goto type definition")
+  map("n", "grr", "<cmd>Lspsaga finder ref<cr>", "References")
+  map("n", "gri", "<cmd>Lspsaga finder imp<cr>", "Goto implementation")
+  map("n", "grt", "<cmd>Lspsaga goto_type_definition<cr>", "Goto type definition")
   map("n", "grn", vim.lsp.buf.rename, "Rename symbol")
-  map({ "n", "v" }, "gra", vim.lsp.buf.code_action, "Code action")
+  map({ "n", "v" }, "gra", "<cmd>Lspsaga code_action<cr>", "Code action")
   map("n", "gO", tb.lsp_document_symbols, "Document symbols")
   map("n", "H", function()
     vim.lsp.buf.hover({ border = "rounded", max_height = 25 })
@@ -31,12 +31,12 @@ local function on_attach_keymaps(ev)
     vim.lsp.inlay_hint.enable(not enabled, { bufnr = ev.buf })
   end, "Toggle inlay hints")
 
-  -- <leader>l: the old-config LSP command tree (native/telescope equivalents;
-  -- lspsaga-only peeks are not ported)
+  -- <leader>l: the old-config LSP command tree with selected lspsaga UIs.
   map("n", "<leader>lk", function()
     vim.lsp.buf.signature_help({ border = "rounded" })
   end, "Signature help")
-  map({ "n", "v" }, "<leader>la", vim.lsp.buf.code_action, "Code action")
+  map({ "n", "v" }, "<leader>la", "<cmd>Lspsaga code_action<cr>", "Code action")
+  map("n", "<leader>lf", "<cmd>Lspsaga finder<cr>", "LSP finder")
   map("n", "<leader>lr", vim.lsp.buf.rename, "Rename symbol")
   map("n", "<leader>lo", "<cmd>Trouble symbols toggle focus=false<cr>", "Symbol outline")
 
@@ -96,9 +96,16 @@ local function setup_codelens(ev)
 end
 
 function M.setup()
-  -- blink.cmp capabilities for every server
+  -- blink.cmp + folding capabilities for every server
+  local capabilities = require("blink.cmp").get_lsp_capabilities()
+  capabilities.textDocument = capabilities.textDocument or {}
+  capabilities.textDocument.foldingRange = {
+    dynamicRegistration = false,
+    lineFoldingOnly = true,
+  }
+
   vim.lsp.config("*", {
-    capabilities = require("blink.cmp").get_lsp_capabilities(),
+    capabilities = capabilities,
   })
 
   -- Code lenses on by default (old-config default); 'globals' in

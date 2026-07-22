@@ -3,7 +3,13 @@
 local M = {}
 
 function M.setup()
-  require("trouble").setup({})
+  require("trouble").setup({
+    modes = {
+      symbols = {
+        win = { position = "right", size = 0.35 },
+      },
+    },
+  })
 
   -- Old-config layout: trouble pickers live under <leader>k
   local map = vim.keymap.set
