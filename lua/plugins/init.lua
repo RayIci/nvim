@@ -39,6 +39,7 @@ require("plugins.grug-far").setup()
 
 -- UI
 require("plugins.theme").setup()
+require("plugins.snacks").setup()
 require("plugins.whichkey").setup()
 require("plugins.noice").setup()
 require("plugins.trouble").setup()

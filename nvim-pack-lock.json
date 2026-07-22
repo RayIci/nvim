@@ -1,8 +1,9 @@
 {
   "plugins": {
     "CopilotChat.nvim": {
-      "rev": "f0c2a23ab79dc295f5e0eef0d8b587a39020c852",
-      "src": "https://github.com/CopilotC-Nvim/CopilotChat.nvim"
+      "rev": "efa8b6ecc7016b930d13968da2a57fa2341ba6f7",
+      "src": "https://github.com/CopilotC-Nvim/CopilotChat.nvim",
+      "version": "'efa8b6ecc7016b930d13968da2a57fa2341ba6f7'"
     },
     "auto-session": {
       "rev": "6cde3874a9283c2db55627acca5f28e4fa402320",
@@ -327,6 +328,10 @@
     "scope.nvim": {
       "rev": "228aabdb1b9cc74f0c0ccec88e79873857236e49",
       "src": "https://github.com/tiagovla/scope.nvim"
+    },
+    "snacks.nvim": {
+      "rev": "882c996cf28183f4d63640de0b4c02ec886d01f2",
+      "src": "https://github.com/folke/snacks.nvim"
     },
     "sonokai": {
       "rev": "b023c5280b16fe2366f5e779d8d2756b3e5ee9c3",

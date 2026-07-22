@@ -1,7 +1,6 @@
 ---Environment-aware clipboard provider selection.
 ---Supports: WSL, macOS, Linux (X11/Wayland), SSH, tmux, Windows.
----Requiring this module selects a provider, sets clipboard=unnamedplus, and
----emits a one-line startup notification naming the environment and provider.
+---Requiring this module selects a provider and sets clipboard=unnamedplus.
 local M = {}
 
 -- =============================================================================
@@ -295,6 +294,5 @@ end
 -- =============================================================================
 
 M.setup()
-vim.notify("Clipboard configured: " .. M.get_environment_string(), vim.log.levels.INFO)
 
 return M
