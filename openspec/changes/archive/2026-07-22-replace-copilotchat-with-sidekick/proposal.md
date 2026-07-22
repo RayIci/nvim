@@ -11,6 +11,7 @@ CopilotChat's provider path is unreliable in this environment: GitHub's Copilot 
 - Preserve visual-selection workflows by sending Sidekick context such as `{selection}` and `{this}` through Sidekick.
 - Replace CopilotChat commit-message generation with conditional behavior: from `gitcommit` buffers, run a non-interactive CLI prompt and insert the result; outside `gitcommit` buffers, keep normal Sidekick behavior.
 - Add Neovim-accessible commit-generation settings so the user can choose the headless commit CLI (`copilot` or `claude`), choose a supported model for that CLI, and persist those choices across sessions.
+- Refine commit-message prompts so generated bodies use a short introductory sentence followed by concrete change bullets, while preserving Conventional Commits title and raw-output constraints.
 
 ## Capabilities
 

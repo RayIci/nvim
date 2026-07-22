@@ -62,6 +62,12 @@ The current CopilotChat commit generator auto-runs in empty `gitcommit` buffers 
 
 Commit-message generation is the exception when invoked from a `gitcommit` buffer: it should run the selected or active Sidekick CLI tool in non-interactive mode, include the staged diff directly in the prompt, and insert the returned message into the commit buffer. When the same commit-message keymap is invoked outside a `gitcommit` buffer, it should keep normal Sidekick behavior and send the commit prompt to Sidekick.
 
+### Use structured commit-message bodies
+
+Both the interactive Sidekick commit prompt and the headless `gitcommit` prompt should ask for the same commit-message shape: a Conventional Commits title, a blank line, then a body that starts with a short introductory sentence and follows with a `- ` bullet list of concrete changes. A final short paragraph for rationale, impact, or context is optional.
+
+The prompt should preserve the existing output constraints: answer with only the raw commit message, avoid code fences, quotes, markdown headings, explanations, commentary, and alternative options. It should also discourage obvious implementation details, formatting-only noise, generated-file noise, and unrelated changes unless they are central to understanding the commit.
+
 ### Persist dedicated commit-generation CLI and model preferences
 
 Headless commit-message generation should have its own persisted settings instead of relying only on the currently attached Sidekick session. Normal Sidekick chat/session behavior remains native, but the commit generator needs deterministic headless execution.
@@ -81,6 +87,7 @@ This differs from normal Sidekick selection intentionally: normal AI actions con
 
 - [Risk] Sidekick changes the UX from native chat buffer to CLI terminal. → Mitigation: keep keymaps under the same `<leader>a` namespace and provide prompt helpers so daily actions remain one keypress.
 - [Risk] Headless commit generation depends on the default CLI supporting non-interactive prompt mode. → Mitigation: support Copilot CLI and Claude CLI explicitly, and fall back to normal Sidekick prompting for unsupported tools.
+- [Risk] Structured commit bodies can be too verbose for tiny commits. → Mitigation: require only a short intro and concise bullet list, while keeping any final context paragraph optional.
 - [Risk] Model names and CLI flags can drift as AI CLIs evolve. → Mitigation: keep model lists small and explicit per CLI, include an automatic/default option, and pass model flags only when a concrete model is selected.
 - [Risk] Claude/Copilot CLI availability differs between machines. → Mitigation: Sidekick's selector shows installed/missing tools and can open install URLs.
 - [Risk] Sidekick NES overlaps with existing Copilot inline suggestions. → Mitigation: disable NES by default in this change.

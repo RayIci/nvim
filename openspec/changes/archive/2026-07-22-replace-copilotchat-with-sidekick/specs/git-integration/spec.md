@@ -1,7 +1,7 @@
 ## MODIFIED Requirements
 
 ### Requirement: Copilot-generated commit messages
-The configuration SHALL provide headless commit-message generation when invoked from a `gitcommit` buffer. The command SHALL read the staged diff, run the persisted commit-generation AI CLI in non-interactive mode when supported, and insert the returned Conventional Commits title and body into the commit buffer. A buffer-local keymap SHALL be available in `gitcommit` buffers for this prompt, and no automatic generation SHALL run when a fresh commit buffer opens.
+The configuration SHALL provide headless commit-message generation when invoked from a `gitcommit` buffer. The command SHALL read the staged diff, run the persisted commit-generation AI CLI in non-interactive mode when supported, and insert the returned Conventional Commits title and structured body into the commit buffer. Generated commit messages SHALL use a single Conventional Commits title line at most 72 characters, followed by a body that starts with a short introductory sentence and includes a `- ` bullet list of concrete changes. A buffer-local keymap SHALL be available in `gitcommit` buffers for this prompt, and no automatic generation SHALL run when a fresh commit buffer opens.
 
 #### Scenario: No automatic message on fresh commit
 - **WHEN** the user runs `git commit` with staged changes and the commit buffer opens empty
@@ -16,6 +16,13 @@ The configuration SHALL provide headless commit-message generation when invoked 
 - **THEN** the configuration runs the persisted commit-generation AI CLI non-interactively with the staged diff
 - **AND** a persistent spinner notification shows the tool and configured model while generation is running
 - **AND** the generated commit message is inserted into the commit buffer
+
+#### Scenario: Structured commit body
+- **WHEN** a commit-message prompt is rendered for interactive or headless generation
+- **THEN** it instructs the AI CLI to write a body with a short introductory sentence
+- **AND** it requires a `- ` bullet list of concrete changes
+- **AND** it allows a final rationale, impact, or context paragraph only when useful
+- **AND** it preserves raw-output constraints such as no code fences, quotes, markdown headings, explanations, commentary, or alternative options
 
 #### Scenario: Commit prompt outside commit buffer
 - **WHEN** the user invokes the commit-message keymap outside a `gitcommit` buffer
