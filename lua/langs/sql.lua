@@ -84,20 +84,136 @@ local function dbui_buffer_maps()
 end
 
 ---Dedicated sqlfluff config that pins a dialect, found by searching upward from
----a file. Only `.sqlfluff`/`.sqlfluff.cfg` count as definitive — pyproject.toml
----and setup.cfg may exist with no `[sqlfluff]` section, and mis-detecting one
----would make us force `--dialect ansi` over a real config.
+---a file. Generic config containers only count when they have a sqlfluff section.
 ---@param fname string
 ---@return string|nil dir containing the config
 local function sqlfluff_config_dir(fname)
   if not fname or fname == "" then
     return nil
   end
-  local found = vim.fs.find({ ".sqlfluff", ".sqlfluff.cfg" }, {
-    path = vim.fs.dirname(fname),
-    upward = true,
-  })[1]
-  return found and vim.fs.dirname(found) or nil
+  local names = { ".sqlfluff", ".sqlfluff.cfg", "pyproject.toml", "setup.cfg", "tox.ini", "pep8.ini" }
+  local dir = vim.fs.dirname(fname)
+
+  while dir do
+    for _, name in ipairs(names) do
+      local path = vim.fs.joinpath(dir, name)
+      if vim.fn.filereadable(path) == 1 then
+        if name == ".sqlfluff" or name == ".sqlfluff.cfg" then
+          return dir
+        end
+
+        local ok, lines = pcall(vim.fn.readfile, path)
+        if ok then
+          for _, line in ipairs(lines) do
+            if
+              (name == "pyproject.toml" and line:match("^%s*%[tool%.sqlfluff[%].]"))
+              or (name ~= "pyproject.toml" and line:match("^%s*%[sqlfluff[%].]"))
+            then
+              return dir
+            end
+          end
+        end
+      end
+    end
+
+    local parent = vim.fs.dirname(dir)
+    if parent == dir then
+      break
+    end
+    dir = parent
+  end
+
+  return nil
+end
+
+local sqlfluff_dialect_pref = "sqlfluff_dialect"
+local sqlfluff_default_dialect = "ansi"
+local sqlfluff_dialects = {
+  "ansi",
+  "athena",
+  "bigquery",
+  "clickhouse",
+  "databricks",
+  "db2",
+  "doris",
+  "duckdb",
+  "exasol",
+  "flink",
+  "greenplum",
+  "hive",
+  "impala",
+  "mariadb",
+  "materialize",
+  "mysql",
+  "oracle",
+  "postgres",
+  "redshift",
+  "snowflake",
+  "soql",
+  "sparksql",
+  "sqlite",
+  "starrocks",
+  "teradata",
+  "trino",
+  "tsql",
+  "vertica",
+}
+
+local sqlfluff_dialect_set = {}
+for _, dialect in ipairs(sqlfluff_dialects) do
+  sqlfluff_dialect_set[dialect] = true
+end
+
+local function selected_sqlfluff_dialect()
+  local dialect = require("config.prefs").get(sqlfluff_dialect_pref, sqlfluff_default_dialect)
+  if type(dialect) == "string" then
+    dialect = dialect:lower()
+  end
+  return sqlfluff_dialect_set[dialect] and dialect or sqlfluff_default_dialect
+end
+
+---@param dialect string
+local function set_sqlfluff_dialect(dialect)
+  dialect = dialect:lower()
+  if not sqlfluff_dialect_set[dialect] then
+    vim.notify("SQLFluff: unknown dialect '" .. dialect .. "'", vim.log.levels.ERROR)
+    return
+  end
+
+  require("config.prefs").set(sqlfluff_dialect_pref, dialect)
+  vim.notify("SQLFluff fallback dialect: " .. dialect .. " (project config still takes precedence)")
+end
+
+local function select_sqlfluff_dialect()
+  local current = selected_sqlfluff_dialect()
+  vim.ui.select(sqlfluff_dialects, {
+    prompt = "SQLFluff fallback dialect",
+    format_item = function(item)
+      return item == current and (item .. " (current)") or item
+    end,
+  }, function(choice)
+    if choice then
+      set_sqlfluff_dialect(choice)
+    end
+  end)
+end
+
+---@param subcommand string
+---@param fname string
+---@return string[]
+local function sqlfluff_args(subcommand, fname)
+  local args = { subcommand }
+  if subcommand == "lint" then
+    vim.list_extend(args, { "--format=json" })
+  end
+  if fname ~= "" then
+    vim.list_extend(args, { "--stdin-filename", fname })
+  end
+  if not sqlfluff_config_dir(fname) then
+    vim.list_extend(args, { "--dialect", selected_sqlfluff_dialect() })
+  end
+  args[#args + 1] = "-"
+  return args
 end
 
 ---@type LangPack
@@ -139,35 +255,41 @@ return {
 
     dbui_buffer_maps()
 
-    -- sqlfluff needs a dialect, and this config spans many (postgres, mysql,
-    -- sqlite, tsql, snowflake, bigquery, databricks). Never hardcode one:
-    --
-    --   Formatting: run only where a dedicated .sqlfluff exists (require_cwd),
-    --   so the dialect is always known — `sqlfluff fix` under a generic dialect
-    --   could rewrite dialect-specific SQL incorrectly.
-    --
-    --   Linting: defer to the project config when present (via --stdin-filename
-    --   so discovery follows the file, not Neovim's cwd), and fall back to the
-    --   permissive `ansi` dialect only when none exists — lint is non-destructive
-    --   and a fallback beats sqlfluff erroring with "no dialect specified".
+    vim.api.nvim_create_user_command("SqlDialect", function(opts)
+      if opts.args == "" then
+        select_sqlfluff_dialect()
+      else
+        set_sqlfluff_dialect(opts.args)
+      end
+    end, {
+      nargs = "?",
+      complete = function()
+        return sqlfluff_dialects
+      end,
+      desc = "Select persisted SQLFluff fallback dialect",
+    })
+
+    vim.keymap.set("n", "<leader>Ds", select_sqlfluff_dialect, { desc = "Select SQL dialect" })
+
+    -- sqlfluff needs a dialect. Project sqlfluff config always wins; otherwise
+    -- use the persisted fallback dialect selected by :SqlDialect.
     require("conform").formatters.sqlfluff = {
-      cwd = require("conform.util").root_file({ ".sqlfluff", ".sqlfluff.cfg" }),
-      require_cwd = true,
+      command = "sqlfluff",
+      stdin = true,
+      exit_codes = { 0, 1 },
+      cwd = function(_, ctx)
+        return sqlfluff_config_dir(ctx.filename) or vim.fn.getcwd()
+      end,
+      args = function(_, ctx)
+        return sqlfluff_args("fix", ctx.filename)
+      end,
     }
 
     local default_sqlfluff = require("lint.linters.sqlfluff")
     require("lint").linters.sqlfluff = function()
       local linter = vim.deepcopy(default_sqlfluff)
       local fname = vim.api.nvim_buf_get_name(0)
-      local args = { "lint", "--format=json" }
-      if fname ~= "" then
-        vim.list_extend(args, { "--stdin-filename", fname })
-      end
-      if not sqlfluff_config_dir(fname) then
-        vim.list_extend(args, { "--dialect", "ansi" })
-      end
-      args[#args + 1] = "-"
-      linter.args = args
+      linter.args = sqlfluff_args("lint", fname)
       return linter
     end
   end,

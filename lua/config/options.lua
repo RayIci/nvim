@@ -3,6 +3,7 @@
 -- Leader must be set before any plugin creates <leader> mappings.
 vim.g.mapleader = " "
 vim.g.maplocalleader = "\\"
+vim.g.omni_sql_no_default_maps = 1
 
 local o = vim.o
 
