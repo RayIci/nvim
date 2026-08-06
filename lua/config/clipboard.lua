@@ -30,12 +30,37 @@ local function is_tmux()
   return vim.env.TMUX ~= nil
 end
 
+local function path_exists(path)
+  local uv = vim.uv or vim.loop
+  return uv.fs_stat(path) ~= nil
+end
+
 local function has_wayland()
-  return vim.env.WAYLAND_DISPLAY ~= nil
+  local display = vim.env.WAYLAND_DISPLAY
+  if not display or display == "" then
+    return false
+  end
+
+  if display:sub(1, 1) == "/" then
+    return path_exists(display)
+  end
+
+  local runtime_dir = vim.env.XDG_RUNTIME_DIR
+  return runtime_dir ~= nil and runtime_dir ~= "" and path_exists(runtime_dir .. "/" .. display)
 end
 
 local function has_x11()
-  return vim.env.DISPLAY ~= nil
+  local display = vim.env.DISPLAY
+  if not display or display == "" then
+    return false
+  end
+
+  local display_number = display:match("^:(%d+)")
+  if display_number then
+    return path_exists("/tmp/.X11-unix/X" .. display_number)
+  end
+
+  return true
 end
 
 local function is_macos()
@@ -52,7 +77,9 @@ end
 
 local providers = {}
 
--- WSL: win32yank.exe (preferred, fast and handles line endings)
+-- WSL: win32yank.exe bridges Neovim running inside Linux to the Windows host
+-- clipboard. It is preferred because WSLg/Wayland can expose stale sockets and
+-- PowerShell-based fallbacks are noticeably slower and may preserve CR chars.
 providers.win32yank = function()
   if not executable("win32yank.exe") then
     return nil
@@ -76,16 +103,47 @@ providers.wsl_native = function()
   if not (executable("clip.exe") and executable("powershell.exe")) then
     return nil
   end
+
+  local cached = {
+    ["+"] = nil,
+    ["*"] = nil,
+  }
+
+  local function copy(reg)
+    return function(lines)
+      cached[reg] = vim.deepcopy(lines)
+      vim.fn.system("clip.exe", lines)
+    end
+  end
+
+  local function paste(reg)
+    return function()
+      if cached[reg] then
+        return vim.deepcopy(cached[reg])
+      end
+
+      local lines = vim.fn.systemlist({ "powershell.exe", "-NoLogo", "-NoProfile", "-Command", "Get-Clipboard -Raw" })
+      if vim.v.shell_error ~= 0 then
+        return 0
+      end
+
+      for index, line in ipairs(lines) do
+        lines[index] = line:gsub("\r", "")
+      end
+
+      return lines
+    end
+  end
+
   return {
     name = "wsl-native",
     copy = {
-      ["+"] = "clip.exe",
-      ["*"] = "clip.exe",
+      ["+"] = copy("+"),
+      ["*"] = copy("*"),
     },
     paste = {
-      -- PowerShell Get-Clipboard with tr to remove Windows line endings
-      ["+"] = 'powershell.exe -NoLogo -NoProfile -c "Get-Clipboard -Raw" | tr -d "\\r"',
-      ["*"] = 'powershell.exe -NoLogo -NoProfile -c "Get-Clipboard -Raw" | tr -d "\\r"',
+      ["+"] = paste("+"),
+      ["*"] = paste("*"),
     },
     cache_enabled = 0,
   }
@@ -195,13 +253,13 @@ end
 -- =============================================================================
 
 local function select_provider()
-  -- WSL: try win32yank first, then native WSL tools
+  -- WSL: prefer Windows-native clipboard tools, then WSLg/X11 fallbacks.
   if is_wsl() then
     return providers.win32yank()
+      or providers.wsl_native()
       or providers.wayland() -- WSLg support
       or providers.xclip() -- X11 forwarding
       or providers.xsel()
-      or providers.wsl_native()
       or providers.osc52()
   end
 
