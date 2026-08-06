@@ -2,10 +2,24 @@
 ---@class PluginConform
 local M = {}
 
+local function format()
+  require("conform").format({ async = true, lsp_format = "fallback" })
+end
+
+local function save_without_format()
+  vim.b.conform_skip_once = true
+  vim.cmd.write()
+end
+
 function M.setup()
-  vim.keymap.set({ "n", "v" }, "<leader>cf", function()
-    require("conform").format({ async = true, lsp_format = "fallback" })
-  end, { desc = "Format buffer/selection" })
+  vim.api.nvim_create_user_command("Format", format, { desc = "Format buffer" })
+  vim.api.nvim_create_user_command(
+    "SaveWithoutFormatting",
+    save_without_format,
+    { desc = "Save without formatting" }
+  )
+
+  vim.keymap.set({ "n", "v" }, "<leader>cf", format, { desc = "Format buffer/selection" })
 
   vim.keymap.set("n", "<leader>uf", function()
     local prefs = require("config.prefs")
@@ -15,10 +29,6 @@ function M.setup()
 
   -- One-shot save that skips format-on-save (shadows normal-mode increment;
   -- visual-mode <C-a> increment still works).
-  local function save_without_format()
-    vim.b.conform_skip_once = true
-    vim.cmd.write()
-  end
   vim.keymap.set("n", "<C-a>", save_without_format, { desc = "Save without formatting" })
   vim.keymap.set("i", "<C-a>", function()
     vim.cmd.stopinsert()

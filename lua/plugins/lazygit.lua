@@ -3,7 +3,8 @@
 ---@class PluginLazygit
 local M = {}
 
-local function open_lazygit()
+---@param panel? string
+local function open_lazygit(panel)
   if vim.fn.executable("lazygit") == 0 then
     vim.notify("lazygit is not installed", vim.log.levels.ERROR)
     return
@@ -26,7 +27,12 @@ local function open_lazygit()
     border = "rounded",
   })
 
-  vim.fn.jobstart({ "lazygit" }, {
+  local cmd = { "lazygit" }
+  if panel then
+    cmd[#cmd + 1] = panel
+  end
+
+  vim.fn.jobstart(cmd, {
     term = true,
     on_exit = function()
       if vim.api.nvim_win_is_valid(win) then
@@ -42,6 +48,9 @@ end
 
 function M.setup()
   vim.keymap.set("n", "<leader>gg", open_lazygit, { desc = "Lazygit" })
+  vim.keymap.set("n", "<leader>gl", function()
+    open_lazygit("log")
+  end, { desc = "Lazygit log" })
 end
 
 return M
