@@ -2,6 +2,17 @@
 ---@class PluginNeotree
 local M = {}
 
+-- IDE-style yellow for folder icons (survives theme switches, see below).
+local FOLDER_ICON_COLOR = "#E5C07B"
+
+---Re-applied on every ColorScheme event: neo-tree recomputes
+---NeoTreeDirectoryIcon itself (linking it to "Directory") each time the
+---colorscheme changes, so we have to reassert this after every switch,
+---not just once at startup.
+local function set_folder_icon_hl()
+  vim.api.nvim_set_hl(0, "NeoTreeDirectoryIcon", { fg = FOLDER_ICON_COLOR })
+end
+
 ---Yank the node's path in a chosen form (old-config "advanced yank" on Y).
 ---@param state table neo-tree state
 local function copy_node_path(state)
@@ -103,6 +114,12 @@ function M.setup()
 
   vim.keymap.set("n", "<leader>e", "<cmd>Neotree toggle<cr>", { desc = "File explorer" })
   vim.keymap.set("n", "<leader>E", "<cmd>Neotree reveal<cr>", { desc = "Reveal file in explorer" })
+
+  set_folder_icon_hl()
+  vim.api.nvim_create_autocmd("ColorScheme", {
+    group = vim.api.nvim_create_augroup("plugins.neotree.folder_icon", { clear = true }),
+    callback = set_folder_icon_hl,
+  })
 end
 
 return M

@@ -54,7 +54,10 @@ vim.api.nvim_create_autocmd("SwapExists", {
     if alive then
       vim.v.swapchoice = "o" -- file open in another instance: read-only
       vim.schedule(function()
-        vim.notify("File open in another nvim (pid " .. info.pid .. "), opened read-only", vim.log.levels.WARN)
+        vim.notify(
+          "File open in another nvim (pid " .. info.pid .. "), opened read-only",
+          vim.log.levels.WARN
+        )
       end)
     elseif info.dirty == 0 then
       vim.v.swapchoice = "d" -- dead session, nothing unsaved: delete swap
