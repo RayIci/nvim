@@ -48,6 +48,15 @@ local function copy_node_path(state)
   end)
 end
 
+---Create a new C# item (class/interface/enum/record) via easy-dotnet.nvim's
+---Roslyn-backed generator, scoped to the directory under the cursor.
+---@param state table neo-tree state
+local function create_dotnet_item(state)
+  local node = state.tree:get_node()
+  local path = node.type == "directory" and node.path or vim.fs.dirname(node.path)
+  require("easy-dotnet").create_item(path)
+end
+
 ---Open the node under the cursor: directories toggle; files open directly when
 ---at most one eligible window exists, otherwise through the window picker.
 ---@param state table neo-tree state
@@ -101,6 +110,14 @@ function M.setup()
         never_show = { "__pycache__" },
       },
       use_libuv_file_watcher = true,
+      commands = {
+        create_dotnet_item = create_dotnet_item,
+      },
+      window = {
+        mappings = {
+          ["n"] = "create_dotnet_item",
+        },
+      },
     },
     window = {
       width = 45,
