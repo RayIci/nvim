@@ -11,6 +11,31 @@ function M.setup()
     enable_builtin = true,
   })
 
+  -- octo defines its Octo* highlight groups once, inside setup(), and this
+  -- pinned version has no ColorScheme hook. Any later `:colorscheme` (Themery,
+  -- including its livePreview) runs `hi clear`, which empties those groups and
+  -- leaves PR/issue buffers uncolored.
+  --
+  -- Re-running octo's colors.setup() is not enough on its own: it guards every
+  -- group with `hlexists()`, and a cleared group still "exists", so it skips
+  -- them all. Stub hlexists() for the duration of the call so the groups are
+  -- rebuilt against the new theme (links re-resolve, and the float-derived
+  -- backgrounds such as OctoEditable pick up the new colors).
+  vim.api.nvim_create_autocmd("ColorScheme", {
+    group = vim.api.nvim_create_augroup("config.octo.colors", { clear = true }),
+    callback = function()
+      local ok, colors = pcall(require, "octo.ui.colors")
+      if not ok then
+        return
+      end
+      vim.fn.hlexists = function()
+        return 0
+      end
+      pcall(colors.setup)
+      vim.fn.hlexists = nil -- restore the builtin via vim.fn's metatable
+    end,
+  })
+
   local map = vim.keymap.set
 
   -- Issues
