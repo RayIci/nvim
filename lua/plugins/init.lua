@@ -22,6 +22,7 @@ require("plugins.toggleterm").setup()
 -- AI
 require("plugins.copilot").setup()
 require("plugins.sidekick").setup()
+require("plugins.commitsmith").setup()
 
 -- Git
 require("plugins.gitsigns").setup()
