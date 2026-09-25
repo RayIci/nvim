@@ -130,7 +130,16 @@ function M.setup()
   vim.fn.sign_define("DapBreakpoint", { text = "●", texthl = "DiagnosticError" })
   vim.fn.sign_define("DapBreakpointCondition", { text = "◆", texthl = "DiagnosticWarn" })
   vim.fn.sign_define("DapLogPoint", { text = "◆", texthl = "DiagnosticInfo" })
-  vim.fn.sign_define("DapStopped", { text = "", texthl = "DiagnosticOk", linehl = "Visual" })
+  local function set_stopped_highlights()
+    vim.api.nvim_set_hl(0, "DapStoppedSign", { default = true, fg = "#88C0D0", bold = true })
+    vim.api.nvim_set_hl(0, "DapStoppedLine", { default = true, bg = "#3B4252" })
+  end
+  set_stopped_highlights()
+  vim.api.nvim_create_autocmd("ColorScheme", {
+    group = vim.api.nvim_create_augroup("DapStoppedHighlight", { clear = true }),
+    callback = set_stopped_highlights,
+  })
+  vim.fn.sign_define("DapStopped", { text = "→", texthl = "DapStoppedSign", linehl = "DapStoppedLine" })
 
   require("which-key").add({
     { "<leader>db", group = "breakpoints" },
