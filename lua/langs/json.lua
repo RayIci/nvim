@@ -1,15 +1,11 @@
 ---JSON language pack: jsonls with schemastore schemas + prettier + jsonlint.
 
--- nvim-treesitter's main branch ships no `jsonc` parser (only json/json5), so
--- requesting it warns "skipping unsupported language: jsonc". Map the jsonc
--- filetype to the json parser instead — this runs at pack-load time (during the
--- langs collect step, before treesitter install/apply), so the loader's
--- FileType autocmd picks up jsonc and highlights it with the json parser.
-vim.treesitter.language.register("json", "jsonc")
-
 ---@type LangPack
 return {
-  treesitter = { "json", "json5" },
+  -- nvim-treesitter's main branch ships no `jsonc` parser (only json/json5),
+  -- and requesting one warns "skipping unsupported language: jsonc"; the json
+  -- parser serves the jsonc filetype instead.
+  treesitter = { "json5", json = { "json", "jsonc" } },
   lsp = {
     jsonls = {
       before_init = function(_, config)

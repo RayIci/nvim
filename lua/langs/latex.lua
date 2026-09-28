@@ -1,7 +1,10 @@
 ---LaTeX language pack: texlab + tex-fmt + vimtex + soft-wrap editing.
 ---@type LangPack
 return {
-  treesitter = { "latex", "bibtex" },
+  -- latex: installed (LaTeX injected in markdown etc.) but never started on
+  -- tex buffers — vimtex's math text objects, math-zone detection and conceal
+  -- need its own syntax highlighting (:h vimtex-faq-treesitter).
+  treesitter = { latex = {}, bibtex = { "bib" } },
   lsp = { texlab = {} },
   formatters = { tex = { "tex-fmt" } },
   mason = { "texlab", "latexindent", "tex-fmt" },

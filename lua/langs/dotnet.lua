@@ -221,7 +221,7 @@ local has_dotnet = vim.fn.executable("dotnet") == 1
 
 ---@type LangPack
 return {
-  treesitter = { "c_sharp" },
+  treesitter = { c_sharp = { "cs", "csharp" } },
   lsp = has_dotnet and { roslyn = {} } or {},
   formatters = { cs = { "csharpier" } },
   -- The roslyn server is the mason package `roslyn-language-server` (mason

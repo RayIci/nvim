@@ -12,8 +12,8 @@ function M.setup()
 end
 
 ---Install parsers from language packs and enable highlight+indent for them.
----@param parsers string[] parser names from the merged language packs
-function M.apply(parsers)
+---@param ts LangTreesitterMerged parsers + explicit filetype lists from the packs
+function M.apply(ts)
   -- Always useful parsers on top of what packs declare
   local wanted = {
     "vim",
@@ -42,7 +42,7 @@ function M.apply(parsers)
     "gitattributes",
     "dap_repl", -- REPL syntax highlighting (nvim-dap-repl-highlights)
   }
-  for _, parser in ipairs(parsers) do
+  for _, parser in ipairs(ts.parsers) do
     if not vim.list_contains(wanted, parser) then
       wanted[#wanted + 1] = parser
     end
@@ -50,19 +50,42 @@ function M.apply(parsers)
 
   require("nvim-treesitter").install(wanted)
 
-  -- Map parser -> filetypes it serves and start treesitter there.
-  ---@type string[]
-  local fts = {}
+  ---@type table<string, true>
+  local wanted_set = {}
   for _, parser in ipairs(wanted) do
-    vim.list_extend(fts, vim.treesitter.language.get_filetypes(parser))
+    wanted_set[parser] = true
   end
 
+  -- Explicit `parser = { filetypes }` entries: teach the registry those
+  -- filetypes, and remember them as the only ones the parser starts on.
+  ---@type table<string, table<string, true>>
+  local only = {}
+  for parser, fts in pairs(ts.filetypes) do
+    if #fts > 0 then
+      vim.treesitter.language.register(parser, fts)
+    end
+    only[parser] = {}
+    for _, ft in ipairs(fts) do
+      only[parser][ft] = true
+    end
+  end
+
+  -- Decide per buffer when its filetype is set, not from a filetype list
+  -- computed here: nvim-treesitter registers most parser<->filetype mappings
+  -- (c_sharp<->cs, bash<->sh, …) in its plugin/ file, which runs after
+  -- init.lua, so a list built now would miss them.
   vim.api.nvim_create_autocmd("FileType", {
     group = vim.api.nvim_create_augroup("config.treesitter", { clear = true }),
-    pattern = fts,
     callback = function(ev)
+      local lang = vim.treesitter.language.get_lang(ev.match)
+      if not (lang and wanted_set[lang]) then
+        return
+      end
+      if only[lang] and not only[lang][ev.match] then
+        return
+      end
       -- Parser may still be installing on very first launch; don't error.
-      if not pcall(vim.treesitter.start, ev.buf) then
+      if not pcall(vim.treesitter.start, ev.buf, lang) then
         return
       end
       vim.bo[ev.buf].indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()"
