@@ -2,7 +2,13 @@
 ---Tailwind. prettier formats, eslint_d lints JS/TS, htmlhint lints HTML.
 ---@type LangPack
 return {
-  treesitter = { "html", "css", "javascript", "typescript", "tsx" },
+  treesitter = {
+    "html",
+    "css",
+    "typescript",
+    javascript = { "javascript", "javascriptreact" },
+    tsx = { "typescriptreact", "typescript.tsx" },
+  },
   lsp = {
     ts_ls = {},
     cssls = {},

@@ -31,9 +31,20 @@
 ---@field color? table advisory; the bridge renders one component, so a widget
 ---  wanting its own color embeds a `%#Group#…%*` highlight in `render` instead
 
+---Treesitter entries: a bare parser name starts on every filetype the
+---treesitter registry maps to it; `parser = { filetypes }` starts only on
+---those filetypes ({} = install, never start). Forms can be mixed:
+---  { "python", c_sharp = { "cs", "csharp" }, latex = {} }
+---@alias LangTreesitter table<integer|string, string|string[]>
+
+---Merged treesitter wiring.
+---@class LangTreesitterMerged
+---@field parsers string[] every parser to install
+---@field filetypes table<string, string[]> parser -> explicit filetypes (explicit entries only)
+
 ---One drop-in language definition. Every field is optional.
 ---@class LangPack
----@field treesitter? string[] parser names to install and enable
+---@field treesitter? LangTreesitter parsers to install and where to start them
 ---@field lsp? table<string, table> LSP server name -> vim.lsp.config() overrides ({} for defaults)
 ---@field formatters? table<string, string[]> filetype -> conform formatter names
 ---@field linters? table<string, string[]> filetype -> nvim-lint linter names
@@ -47,7 +58,7 @@
 
 ---Merged view over all packs, consumed by lua/plugins/*.
 ---@class LangMerged
----@field treesitter string[]
+---@field treesitter LangTreesitterMerged
 ---@field lsp table<string, table>
 ---@field formatters table<string, string[]>
 ---@field linters table<string, string[]>
@@ -63,7 +74,7 @@ local M = {}
 
 ---@type LangMerged
 M.merged = {
-  treesitter = {},
+  treesitter = { parsers = {}, filetypes = {} },
   lsp = {},
   formatters = {},
   linters = {},
@@ -86,6 +97,22 @@ local function extend_unique(dst, src)
   end
 end
 
+---Merge a pack's treesitter entries (bare names and `parser = { fts }`).
+---Explicit filetype lists from several packs are unioned.
+---@param dst LangTreesitterMerged
+---@param src LangTreesitter
+local function merge_treesitter(dst, src)
+  for key, value in pairs(src) do
+    local parser = type(key) == "number" and value or key
+    ---@cast parser string
+    extend_unique(dst.parsers, { parser })
+    if type(key) == "string" then
+      dst.filetypes[parser] = dst.filetypes[parser] or {}
+      extend_unique(dst.filetypes[parser], value --[[@as string[] ]])
+    end
+  end
+end
+
 ---Discover lua/langs/*.lua (except this loader) and merge their packs.
 ---@return LangMerged
 local function collect()
@@ -100,7 +127,7 @@ local function collect()
       elseif type(pack) ~= "table" then
         vim.notify(("langs: %s must return a table"):format(name), vim.log.levels.ERROR)
       else
-        extend_unique(merged.treesitter, pack.treesitter or {})
+        merge_treesitter(merged.treesitter, pack.treesitter or {})
         extend_unique(merged.mason, pack.mason or {})
         for server, cfg in pairs(pack.lsp or {}) do
           merged.lsp[server] = vim.tbl_deep_extend("force", merged.lsp[server] or {}, cfg)
