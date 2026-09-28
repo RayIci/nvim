@@ -7,6 +7,20 @@
 ---@class PluginLualine
 local M = {}
 
+---Component colour taken from a highlight group of the active colorscheme,
+---so the label follows whatever theme is loaded. Falls back to a fixed hex
+---when the theme leaves that group without a foreground. Evaluated at draw
+---time, so theme switches apply without re-running setup.
+---@param group string highlight group to borrow the foreground from
+---@param fallback string hex used when the group has no foreground
+---@return fun(): table
+local function tint(group, fallback)
+  return function()
+    local fg = vim.api.nvim_get_hl(0, { name = group, link = false }).fg
+    return { fg = fg and string.format("#%06x", fg) or fallback, gui = "bold" }
+  end
+end
+
 ---@return string
 local function macro_recording()
   local reg = vim.fn.reg_recording()
@@ -130,10 +144,10 @@ function M.setup()
       lualine_b = { "branch", "diff", "diagnostics" },
       lualine_c = { { "filename", path = 1 } },
       lualine_x = {
-        { macro_recording, color = { fg = "#ff5555", gui = "bold" } },
-        { lsp_clients, color = { fg = "#7aa2f7", gui = "bold" } },
-        { formatters, color = { fg = "#9ece6a", gui = "bold" } },
-        { linters, color = { fg = "#bb9af7", gui = "bold" } },
+        { macro_recording, color = tint("DiagnosticError", "#ff5555") },
+        { lsp_clients, color = tint("DiagnosticInfo", "#7aa2f7") },
+        { formatters, color = tint("DiagnosticOk", "#9ece6a") },
+        { linters, color = tint("Statement", "#bb9af7") },
         { lang_status },
         "filetype",
       },

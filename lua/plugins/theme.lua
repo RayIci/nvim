@@ -1,12 +1,17 @@
 ---Theme switcher: themery.nvim over the installed theme set.
 ---Selection persists automatically in themery's own state file under
----stdpath('state'); on first launch we fall back to catppuccin-mocha.
+---stdpath('data')/themery; on first launch we fall back to vale-night
+---(in-tree, see lua/vale/).
 ---@class PluginTheme
 local M = {}
 
 function M.setup()
   require("themery").setup({
     themes = {
+      -- Vale (in-tree)
+      { name = "Vale Night", colorscheme = "vale-night" },
+      { name = "Vale Day (light)", colorscheme = "vale-day" },
+
       -- Catppuccin
       { name = "Catppuccin Mocha", colorscheme = "catppuccin-mocha" },
       { name = "Catppuccin Macchiato", colorscheme = "catppuccin-macchiato" },
@@ -138,10 +143,36 @@ function M.setup()
 
   -- Themery applies the persisted theme during setup; default otherwise.
   if vim.g.colors_name == nil or vim.g.colors_name == "default" then
-    pcall(vim.cmd.colorscheme, "catppuccin-mocha")
+    pcall(vim.cmd.colorscheme, "vale-night")
+  end
+
+  -- Themery restores by colorscheme name but remembers its list index in
+  -- vim.g.theme_id (used to revert on <Esc>). Entries added above an old
+  -- selection shift the list, so re-anchor the index by name when stale.
+  local themes = require("themery.config").getSettings().themes
+  local id = vim.g.theme_id
+  if not (id and themes[id] and themes[id].colorscheme == vim.g.colors_name) then
+    for i, theme in ipairs(themes) do
+      if theme.colorscheme == vim.g.colors_name then
+        vim.g.theme_id = i
+        break
+      end
+    end
   end
 
   vim.keymap.set("n", "<leader>ut", "<cmd>Themery<cr>", { desc = "Theme switcher" })
+
+  -- vale colour-tuning workspace (lua/vale/lab)
+  vim.api.nvim_create_user_command("ValeLab", function(opts)
+    require("vale.lab").open(opts.args ~= "" and opts.args or nil)
+  end, {
+    nargs = "?",
+    complete = function()
+      return { "night", "day" }
+    end,
+    desc = "Open the vale colour lab",
+  })
+  vim.keymap.set("n", "<leader>uv", "<cmd>ValeLab<cr>", { desc = "Vale colour lab" })
 end
 
 return M

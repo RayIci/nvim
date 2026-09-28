@@ -21,6 +21,34 @@ function M.setup()
   -- them all. Stub hlexists() for the duration of the call so the groups are
   -- rebuilt against the new theme (links re-resolve, and the float-derived
   -- backgrounds such as OctoEditable pick up the new colors).
+  --
+  -- octo's own palette (config.colors) is fixed GitHub hex, so before the
+  -- rebuild each colour is re-read from a standard highlight group of the
+  -- active theme; a group without that attribute keeps octo's default.
+  local octo_config = require("octo.config")
+  local default_colors = vim.deepcopy(octo_config.values.colors)
+  -- octo colour key -> { highlight group, attribute }
+  local from_theme = {
+    dark_green = { "DiagnosticOk", "fg" }, -- open / passing / additions
+    dark_red = { "DiagnosticError", "fg" }, -- closed / failing / deletions
+    yellow = { "DiagnosticWarn", "fg" }, -- pending
+    blue = { "DiagnosticInfo", "fg" },
+    dark_blue = { "Function", "fg" },
+    purple = { "Statement", "fg" }, -- merged
+    grey = { "LineNr", "fg" },
+    white = { "Normal", "fg" }, -- text on bubbles
+    black = { "Normal", "bg" },
+  }
+  local function theme_colors()
+    local colors = vim.deepcopy(default_colors)
+    for key, src in pairs(from_theme) do
+      local value = vim.api.nvim_get_hl(0, { name = src[1], link = false })[src[2]]
+      if value then
+        colors[key] = string.format("#%06x", value)
+      end
+    end
+    return colors
+  end
   vim.api.nvim_create_autocmd("ColorScheme", {
     group = vim.api.nvim_create_augroup("config.octo.colors", { clear = true }),
     callback = function()
@@ -28,6 +56,7 @@ function M.setup()
       if not ok then
         return
       end
+      octo_config.values.colors = theme_colors()
       vim.fn.hlexists = function()
         return 0
       end

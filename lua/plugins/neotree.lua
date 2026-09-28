@@ -3,6 +3,8 @@
 local M = {}
 
 -- IDE-style yellow for folder icons (survives theme switches, see below).
+-- A colorscheme can supply its own by defining a `FolderIcon` group (vale
+-- does; no third-party theme uses that name), which then wins.
 local FOLDER_ICON_COLOR = "#E5C07B"
 
 ---Re-applied on every ColorScheme event: neo-tree recomputes
@@ -10,7 +12,9 @@ local FOLDER_ICON_COLOR = "#E5C07B"
 ---colorscheme changes, so we have to reassert this after every switch,
 ---not just once at startup.
 local function set_folder_icon_hl()
-  vim.api.nvim_set_hl(0, "NeoTreeDirectoryIcon", { fg = FOLDER_ICON_COLOR })
+  local themed = vim.api.nvim_get_hl(0, { name = "FolderIcon", link = false }).fg ~= nil
+  local spec = themed and { link = "FolderIcon" } or { fg = FOLDER_ICON_COLOR }
+  vim.api.nvim_set_hl(0, "NeoTreeDirectoryIcon", spec)
 end
 
 ---Yank the node's path in a chosen form (old-config "advanced yank" on Y).

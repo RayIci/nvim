@@ -1,0 +1,17 @@
+# Inventory service config for vale
+name: inventory
+version: 3
+price: 3.14
+active: true
+archived: null
+pattern: '^[A-Z]{3}-\d{4}$'
+message: "imported\t%d items\n"
+tags:
+  - retail
+  - warehouse
+limits: &limits
+  maxItems: 1000
+  strict: false
+staging:
+  <<: *limits
+  strict: true

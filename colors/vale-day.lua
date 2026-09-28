@@ -1,0 +1,1 @@
+require("vale").load("day")
