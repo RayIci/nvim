@@ -3,7 +3,7 @@
 ## MODIFIED Requirements
 
 ### Requirement: Theme switcher with persistence
-The configuration SHALL install catppuccin, tokyonight, kanagawa, gruvbox, rose-pine, nightfox, onedark, everforest, and nord, and provide a themery.nvim picker (`<leader>ut`) whose selection persists across restarts. The picker SHALL also list the in-tree vale variants `vale-night` and `vale-day` at the top. On first launch, when no selection has been persisted, `vale-night` SHALL be the active colorscheme. Themery's self-modifying block SHALL be confined to a dedicated small file.
+The configuration SHALL install catppuccin, tokyonight, kanagawa, gruvbox, rose-pine, nightfox, onedark, everforest, and nord, and provide a themery.nvim picker (`<leader>ut`) whose selection persists across restarts. The picker SHALL also list, at the top, every colorscheme defined by a file in the configuration's own `colors/` directory (such as the generated `vale-night` and `vale-day`), discovered at startup so that newly generated themes appear without editing the picker configuration. On first launch, when no selection has been persisted, `vale-night` SHALL be the active colorscheme. Themery's self-modifying block SHALL be confined to a dedicated small file.
 
 #### Scenario: Theme persists
 - **WHEN** the user selects kanagawa in the themery picker and restarts Neovim
@@ -11,7 +11,11 @@ The configuration SHALL install catppuccin, tokyonight, kanagawa, gruvbox, rose-
 
 #### Scenario: Vale in the picker
 - **WHEN** the user opens the themery picker
-- **THEN** `vale-night` and `vale-day` are listed first and selecting one applies it with live preview
+- **THEN** `vale-night` and `vale-day` are listed among the configuration's own colorschemes at the top, and selecting one applies it with live preview
+
+#### Scenario: New theme appears without config edits
+- **WHEN** a new colorscheme file `colors/ocean-night.lua` is added to the configuration and Neovim restarts
+- **THEN** the themery picker lists `ocean-night` at the top, with no change to `lua/plugins/theme.lua`
 
 #### Scenario: First-launch default
 - **WHEN** Neovim starts with no persisted themery selection

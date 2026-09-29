@@ -1,1 +1,1 @@
-return require("vale.lualine")("day")
+return require("vale.lualine")("vale", "day")

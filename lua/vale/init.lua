@@ -1,13 +1,20 @@
----vale: personal colorscheme (vale-night / vale-day), anchored on VS Code Modern.
----Layers: palettes/<variant>.lua (pure data) → semantics.lua (role → palette
----name) → groups/* and integrations/* (group → spec built from roles).
+---vale: theme engine. A theme is `themes/<name>/` in the config directory
+---(night.lua and/or day.lua pure-data palettes, optional semantics.lua); each
+---variant loads as the colorscheme `<name>-<variant>`.
+---Layers: palette (pure data) → semantics (role → palette name: shared
+---default, then theme, then variant overrides) → groups/* and integrations/*.
 ---@class Vale
 local M = {}
 
 ---@alias ValeVariant "night"|"day"
 ---@alias ValeRoles table<string, string> role → "#RRGGBB"
 
-local root = vim.fs.dirname(debug.getinfo(1, "S").source:sub(2))
+---Unsaved studio edits applied on top of the files.
+---@class ValeOverrides
+---@field palette? table<string, string> "block.key" → "#RRGGBB"
+---@field semantics? table replaces the theme's semantics.lua (same shape: role = name, night = {}, day = {})
+
+M.variants = { "night", "day" }
 
 M.blocks = { "base", "accent", "signal", "ansi", "ui" }
 
@@ -41,17 +48,61 @@ M.modules = {
   "vale.integrations",
 }
 
+---Directory holding every theme (user data, outside the plugin code).
+---@return string
+function M.themes_dir()
+  return vim.fs.joinpath(vim.fn.stdpath("config") --[[@as string]], "themes")
+end
+
+---@param name string
+---@param file? string file inside the theme directory
+---@return string
+function M.theme_path(name, file)
+  local dir = vim.fs.joinpath(M.themes_dir(), name)
+  return file and vim.fs.joinpath(dir, file) or dir
+end
+
+---@param name string
 ---@param variant ValeVariant
 ---@return string
-function M.palette_path(variant)
-  return vim.fs.joinpath(root, "palettes", variant .. ".lua")
+function M.palette_path(name, variant)
+  return M.theme_path(name, variant .. ".lua")
 end
 
 ---Read a palette fresh from disk (dofile, so edits are seen on reload).
+---@param name string
 ---@param variant ValeVariant
 ---@return table
-function M.read_palette(variant)
-  return dofile(M.palette_path(variant))
+function M.read_palette(name, variant)
+  return dofile(M.palette_path(name, variant))
+end
+
+---A theme's own semantics overrides ({} when it has none).
+---@param name string
+---@return table
+function M.read_semantics(name)
+  local path = M.theme_path(name, "semantics.lua")
+  return vim.uv.fs_stat(path) and dofile(path) or {}
+end
+
+---Every theme on disk with the variants it has, sorted by name.
+---@return { name: string, variants: ValeVariant[] }[]
+function M.list()
+  local out = {}
+  for name, kind in vim.fs.dir(M.themes_dir()) do
+    if kind == "directory" then
+      local variants = vim.tbl_filter(function(v)
+        return vim.uv.fs_stat(M.palette_path(name, v)) ~= nil
+      end, M.variants)
+      if #variants > 0 then
+        out[#out + 1] = { name = name, variants = variants }
+      end
+    end
+  end
+  table.sort(out, function(a, b)
+    return a.name < b.name
+  end)
+  return out
 end
 
 ---Resolve a palette into a flat colour table: base/accent/signal names at the
@@ -82,13 +133,32 @@ function M.resolve(p, overrides)
   return c
 end
 
+---Role → palette name after layering: shared default, the theme's
+---semantics (its semantics.lua, or an unsaved replacement), then its
+---per-variant table.
+---@param name string
+---@param variant ValeVariant
+---@param theme_semantics? table replacement for the theme's semantics.lua
+---@return table<string, string>
+function M.role_names(name, variant, theme_semantics)
+  local names = vim.deepcopy(require("vale.semantics"))
+  local theme = theme_semantics or M.read_semantics(name)
+  for role, value in pairs(theme) do
+    if type(value) == "string" then
+      names[role] = value
+    end
+  end
+  for role, value in pairs(theme[variant] or {}) do
+    names[role] = value
+  end
+  return names
+end
+
 ---Map semantic roles to hex for a resolved palette.
 ---@param c table resolved palette
----@param variant ValeVariant
+---@param names table<string, string> role → palette name (see role_names)
 ---@return ValeRoles
-function M.roles(c, variant)
-  local sem = require("vale.semantics")
-  local names = vim.tbl_extend("force", sem, sem[variant] or {})
+function M.roles(c, names)
   local r = {}
   for role, name in pairs(names) do
     if type(name) == "string" then
@@ -102,13 +172,15 @@ function M.roles(c, variant)
   return r
 end
 
----Build every highlight group for a variant without applying it.
+---Build every highlight group for a theme variant without applying it.
+---@param name string
 ---@param variant ValeVariant
----@param overrides? table<string, string>
+---@param overrides? ValeOverrides
 ---@return table<string, vim.api.keyset.highlight> groups, table c, ValeRoles r
-function M.build(variant, overrides)
-  local c = M.resolve(M.read_palette(variant), overrides)
-  local r = M.roles(c, variant)
+function M.build(name, variant, overrides)
+  overrides = overrides or {}
+  local c = M.resolve(M.read_palette(name, variant), overrides.palette)
+  local r = M.roles(c, M.role_names(name, variant, overrides.semantics))
   local groups = {}
   for _, mod in ipairs(M.modules) do
     for name, spec in pairs(require(mod)(r, c)) do
@@ -127,22 +199,23 @@ function M.unload()
   end
 end
 
----Colours of the currently loaded variant (nil when vale is not active).
----@type { variant: ValeVariant, c: table, r: ValeRoles }|nil
+---The theme variant loaded last (nil before any vale theme loads).
+---@type { name: string, variant: ValeVariant, c: table, r: ValeRoles }|nil
 M.current = nil
 
----Load a variant as the active colorscheme.
+---Load a theme variant as the active colorscheme `<name>-<variant>`.
+---@param name string
 ---@param variant ValeVariant
----@param overrides? table<string, string> "block.key" → "#RRGGBB" (lab preview)
-function M.load(variant, overrides)
-  local groups, c, r = M.build(variant, overrides)
+---@param overrides? ValeOverrides unsaved studio edits
+function M.load(name, variant, overrides)
+  local groups, c, r = M.build(name, variant, overrides)
 
   if vim.g.colors_name then
     vim.cmd("hi clear")
   end
   vim.o.termguicolors = true
   vim.o.background = variant == "day" and "light" or "dark"
-  vim.g.colors_name = "vale-" .. variant
+  vim.g.colors_name = name .. "-" .. variant
 
   for name, spec in pairs(groups) do
     vim.api.nvim_set_hl(0, name, spec)
@@ -151,10 +224,10 @@ function M.load(variant, overrides)
     vim.g["terminal_color_" .. (i - 1)] = c.ansi[key]
   end
 
-  M.current = { variant = variant, c = c, r = r }
-  -- lualine `require`s its theme; drop the cached table so edits and lab
+  M.current = { name = name, variant = variant, c = c, r = r }
+  -- lualine `require`s its theme; drop the cached table so edits and studio
   -- previews reach the statusline on the next ColorScheme.
-  package.loaded["lualine.themes.vale-" .. variant] = nil
+  package.loaded["lualine.themes." .. name .. "-" .. variant] = nil
 end
 
 return M

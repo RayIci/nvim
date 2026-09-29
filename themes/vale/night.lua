@@ -1,10 +1,10 @@
--- vale-night palette (dark). Seeded from VS Code Dark Modern.
+-- vale theme, night variant (dark). Seeded from VS Code Dark Modern.
 --
--- FORMAT RULES (other tools and :ValeLab rely on them):
+-- FORMAT RULES (other tools and the vale studio rely on them):
 --   * Pure data: no functions, no require, no computed values.
 --   * One entry per line:  key = "#RRGGBB", -- role
 --   * ansi/ui values may instead name a colour from base, accent or signal.
---   * day.lua has exactly the same keys.
+--   * Every palette of every theme has exactly the same keys.
 --
 -- Blocks:
 --   base    backgrounds → foregrounds (UI shades)

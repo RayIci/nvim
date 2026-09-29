@@ -1,9 +1,10 @@
--- Semantic roles → palette names. Highlight groups only ever use these roles,
--- so re-pointing a role here recolours every group that means that thing.
+-- Shared default: semantic roles → palette names, mirroring VS Code's TextMate
+-- scopes (see reference/). Highlight groups only ever use these roles, so
+-- re-pointing a role recolours every group that means that thing.
 --
--- Values are palette names: "blue" (from base/accent/signal) or "ui.<key>".
--- Both variants share this mapping; `day` overrides a role for vale-day only.
--- Initial mapping mirrors VS Code's TextMate scopes (see reference/).
+-- Values are palette names: "blue" (from base/accent/signal) or "ui.<key>";
+-- "fg" means plain text. A theme overrides roles in themes/<name>/semantics.lua
+-- (top-level for all its variants, or inside `night = {}` / `day = {}`).
 
 return {
   -- Editor surfaces
@@ -95,8 +96,4 @@ return {
   rainbow_1 = "ui.rainbow_1",
   rainbow_2 = "ui.rainbow_2",
   rainbow_3 = "ui.rainbow_3",
-
-  day = {
-    folder = "amber", -- day "gold" is VS Code's escape red; folders stay yellow
-  },
 }

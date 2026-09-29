@@ -1,1 +1,1 @@
-require("vale").load("day")
+require("vale").load("vale", "day")

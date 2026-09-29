@@ -1,11 +1,14 @@
----lualine theme for vale. VS Code's status bar is one flat chrome strip;
----the mode badge (section a) adds the only colour, keyed per mode.
+---lualine theme for a vale theme variant. VS Code's status bar is one flat
+---chrome strip; the mode badge (section a) adds the only colour, per mode.
+---Uses the loaded colours (studio previews included) when that variant is active.
+---@param name string
 ---@param variant ValeVariant
 ---@return table
-return function(variant)
+return function(name, variant)
   local vale = require("vale")
   local cur = vale.current
-  local r = (cur and cur.variant == variant) and cur.r or select(3, vale.build(variant))
+  local r = (cur and cur.name == name and cur.variant == variant) and cur.r
+    or select(3, vale.build(name, variant))
 
   local function mode(color)
     return {

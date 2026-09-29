@@ -2,130 +2,149 @@
 
 ## Context
 
-See proposal.md for motivation and the specs for requirements. Relevant current state:
+See proposal.md for motivation and the specs (`vale-engine`, `vale-studio`, `ui-shell`, `git-integration`) for requirements. Relevant current state:
 
-- Plugins are loaded with native `vim.pack` (`lua/config/pack.lua`) and set up explicitly in `lua/plugins/init.lua`; there is no lazy-loading. The config directory is on `runtimepath`, so a top-level `colors/` directory is picked up by `:colorscheme`.
-- Themery (`lua/plugins/theme.lua`) applies the persisted theme during `setup()` and falls back to `catppuccin-mocha`. `livePreview = true` means `:colorscheme` runs on every cursor move in the picker, so a load must be fast and must not leave state behind.
-- Theme-sensitive code outside themes: `lua/plugins/lualine.lua:133-136` (four hardcoded tokyonight hex values), `lua/plugins/neotree.lua` (`FOLDER_ICON_COLOR`, reasserted on `ColorScheme`), `lua/plugins/octo.lua` (rebuilds `Octo*` groups on `ColorScheme`, which stays as is).
-- In-tree plugin precedent: `lua/commitsmith/` (a module tree plus a thin `lua/plugins/commitsmith.lua` setup file).
+- Plugins load with native `vim.pack` and are set up explicitly in `lua/plugins/init.lua`. The config directory is on `runtimepath`, so top-level `colors/` and `lua/lualine/themes/` files are found by `:colorscheme` and lualine's `theme = "auto"`.
+- Themery (`lua/plugins/theme.lua`) takes a static theme list at setup and restores the persisted colorscheme by name. `livePreview = true` runs `:colorscheme` on every cursor move, so loads must be fast and stateless.
+- Built earlier in this change and kept as the engine: `lua/vale/init.lua` (load/resolve/roles), `groups/*`, 35 `integrations/*` modules, `semantics.lua`, `reference/vscode_modern.lua`, `lualine.lua`, the palette format (verified: 1,057 groups, none overridden by plugin `ColorScheme` hooks; load ≈1.5 ms), the single-line `writer`, samples with C#/Java/Rust project scaffolding, and theme-agnostic lualine/neo-tree/octo wiring.
+- Built earlier and now replaced: the `:ValeLab` tab UI (`lab/init.lua`, `lab/panel.lua`) and hand-written `lab/candidates.lua`.
+- In-tree plugin precedent: `lua/commitsmith/` with a thin `lua/plugins/commitsmith.lua`, written to be extracted to its own repository later.
 
 ## Goals / Non-Goals
 
 **Goals:**
-- A palette file that someone who has never seen Neovim Lua can read and copy into a ghostty/kitty/tmux config.
-- A single place to change the meaning of a colour (semantics), separate from the colour itself (palette).
-- A picking loop that is quick: preview in milliseconds, lock with one key, and new candidates arrive by saving a file.
+- Plugin code (`lua/vale/`) and user theme data (`themes/`) are separate, so vale can move to its own repository later without taking the user's themes with it.
+- One engine for every theme; vale-night/day are ordinary themes, not special cases.
+- The page never computes syntax colours itself: Neovim renders, the page displays, so the two previews cannot disagree.
+- Zero dependencies: `vim.uv` for the server, `vim.ui.open` for the browser, plain HTML/CSS/JS assets.
 
 **Non-Goals:**
-- Generating terminal, tmux or prompt themes (a later change; the palette shape is what matters now).
-- Colour-space tooling (OKLCH generation, colour-blind simulation). Candidates are written by hand in the picking sessions.
-- User-facing configuration options (`setup({ transparent = … })`, style toggles). This is a personal theme; edit the files.
-- Compilation or caching of highlights.
+- Using the studio over SSH/remote connections.
+- Deleting or renaming themes from the studio (delete the directory by hand).
+- Exporting ghostty/kitty/wezterm/tmux/starship themes (the palette format keeps it possible).
+- LSP semantic tokens in the page preview (treesitter only there; Neovim itself shows full LSP colouring).
+- User-facing plugin options beyond the themes directory.
 
 ## Decisions
 
-### D1. Module layout
+### D1. Layout: plugin code vs theme data
 
 ```
-colors/
-  vale-night.lua            require("vale").load("night")
-  vale-day.lua              require("vale").load("day")
-lua/vale/
-  init.lua                  load(variant, overrides?): hi clear, set bg/colors_name,
-                            build groups, apply, set terminal colours
-  palettes/
-    night.lua               pure data (portable contract)
-    day.lua                 pure data, same keys
-  reference/
-    vscode_modern.lua       pure data: dark/light VS Code values per slot, source file per value
-  semantics.lua             function(palette) -> roles table (role -> hex)
-  groups/
-    editor.lua  syntax.lua  treesitter.lua  lsp.lua  diagnostics.lua
-  integrations/
-    gitsigns.lua telescope.lua neotree.lua …   one file per plugin
-  lualine.lua               lualine theme table built from roles
-  lab/
-    init.lua  panel.lua  candidates.lua  contrast.lua  writer.lua
-    samples/  sample.py  sample.ts  … csharp/Sample.cs + Sample.csproj
-                                     java/Sample.java + pom.xml
-lua/lualine/themes/vale-night.lua, vale-day.lua   thin shims so `theme = "auto"` finds them
+<config>/
+  lua/vale/                       PLUGIN (extractable)
+    init.lua                      engine API: load(name, variant, overrides?), themes(), paths
+    semantics.lua                 shared default role mapping (VS Code)
+    groups/  integrations/        highlight modules: function(r, c) → { Group = spec }
+    lualine.lua                   lualine theme builder
+    reference/vscode_modern.lua   VS Code values per palette key (hex only, sources)
+    template.lua                  palette text template: every key with its role comment
+    slots.lua                     slot metadata for the page: group, label, `on`, text flag
+    samples/                      token-checklist samples (+ csharp/java/rust projects)
+    studio/
+      init.lua                    :Vale commands, session state, lifecycle
+      server.lua                  HTTP/1.1 over vim.uv (static files, JSON, SSE)
+      api.lua                     routes → engine/render/writer/generate
+      render.lua                  sample → coloured spans (D8)
+      writer.lua                  palette line edits + semantics.lua generation (D10)
+      generate.lua                create theme files and shims (D5)
+      assets/index.html app.js style.css
+  themes/                         USER DATA
+    vale/night.lua day.lua semantics.lua
+  colors/<name>-<variant>.lua                 generated: require("vale").load(name, variant)
+  lua/lualine/themes/<name>-<variant>.lua     generated: require("vale.lualine")(name, variant)
 ```
 
-Each `groups/*` and `integrations/*` module is `function(r) return { Group = spec, … } end`, taking the roles table `r`. `init.lua` merges them and calls `nvim_set_hl` once per group.
+The themes directory defaults to `stdpath("config") .. "/themes"`.
 
-*Alternative:* one big highlights file (as in many small themes). Rejected, because plugin coverage is the point of this change and a per-plugin file makes it auditable: one file per installed plugin, easy to spot what's missing.
+### D2. Palette format (unchanged)
 
-### D2. Palette format: Lua pure data, names inside `ansi`/`ui`
+Pure-data Lua, one `key = "#RRGGBB", -- role` per line, blocks `base`/`accent`/`signal`/`ansi`/`ui`, names allowed in `ansi`/`ui`, VS Code alpha colours pre-blended, identical keys in every palette of every theme. Accent names describe hue families, not roles, so palettes stay meaningful for terminal ports. *Alternatives:* JSON (no comments), TOML (parser needed).
 
-VS Code colours with alpha (selection highlight, find match, diff backgrounds, hint, whitespace) are pre-blended against the variant's editor background when seeding, since Neovim has no alpha. The reference file records the original RGBA value next to the blended hex.
+### D3. Layered semantics
 
-The palette uses `base` (`crust`, `mantle`, `bg`, `surface`, `overlay`, `muted`, `subtext`, `fg`, and further shades if picking needs them), `accent` (named hues seeded from VS Code: `blue`, `purple`, `yellow`, `orange`, `teal`, `light_blue`, `cyan`, `sage`, `green`, `red`, `gold`), `signal` (`error`, `warn`, `info`, `hint`, `add`, `change`, `delete`), `ansi` (16 named slots `black` … `bright_white`, hex or names), and `ui` (hex or names). There is one entry per line, `key = "#rrggbb", -- role`, which keeps the format grep-able and lets the lab rewrite one line (D6).
+Roles resolve through: `lua/vale/semantics.lua` (shared default) → `themes/<name>/semantics.lua` top-level keys → its `night`/`day` sub-tables. Values are palette names (`"green"`, `"ui.selection"`); "plain foreground" is simply `"fg"`, an existing base name, so it needs no special case. A theme file holds only differences:
 
-*Alternatives:* JSON (no comments, which hurts readability) and TOML (needs a parser). A future export script run with `nvim -l` can emit any format from the Lua file, so Lua stays the only source of truth.
+```lua
+return { string = "green", variable = "fg", day = { folder = "amber" } }
+```
 
-Accent names describe the **hue**, not the role (`purple`, not `control_keyword`). That keeps the palette meaningful for a terminal port, where there are no keywords.
+vale's existing day-only `folder = "amber"` override moves from the shared file into `themes/vale/semantics.lua`.
 
-### D3. Semantics maps roles to palette names
+### D4. Loading with overrides
 
-`semantics.lua` is data: it maps each role to a palette name (`"blue"`, or `"ui.selection"` for a ui entry), with an optional `day` table of per-variant overrides: for example `keyword = "blue"`, `keyword_control = "purple"`, `variable = "light_blue"`, `func = "yellow"`, `string = "orange"`. The initial mapping mirrors VS Code's token scopes. The same mapping serves both variants, because they share keys (a light variant's `yellow` is VS Code's brown `#795E26`: same role, variant-specific hex). A variant can override a role mapping only if picking shows it's needed.
+`load(name, variant, overrides)` reads `themes/<name>/<variant>.lua` with `dofile` (fresh on every load), applies `overrides.palette` (`"block.key" → hex`) and `overrides.semantics` (`role → name`) on top of the files, resolves, builds all modules, `hi clear`, sets `background`/`colors_name = name .. "-" .. variant`, applies groups and `terminal_color_0..15`, and drops the cached lualine theme module. The studio previews by loading with overrides; nothing touches disk.
 
-Open design points from exploration (two keyword colours, coloured variables, bracket colours, roles VS Code never coloured) are settled **by editing this file** during picking. The lab hot-reloads it, so they need no separate mechanism.
+### D5. Theme generation
 
-### D4. Load path and overrides
+`generate.create(name, variants, from)`: validate `^[a-z0-9][a-z0-9-]*$` and not taken. `from = "vscode"`: render each variant from `template.lua` text with values taken from the reference (via the writer's line substitution, so output matches the hand-written format exactly). `from = <theme>`: copy that theme's variant files (and `semantics.lua`) byte-for-byte; a variant the source lacks falls back to the reference. Then write the `colors/` and lualine shims per variant. Shims contain only one `require` line, so they never need regenerating when the engine changes.
 
-`load(variant, overrides)` performs these steps:
+### D6. Server and protocol
 
-1. `hi clear`, set `vim.o.background`, `vim.g.colors_name = "vale-" .. variant`.
-2. Read the palette with `dofile` (not `require`) so that edits are picked up on reload without clearing `package.loaded`. Apply `overrides` (slot → hex) on top.
-3. Resolve names in `ansi`/`ui` to hex, build roles, and merge all group modules.
-4. Call `nvim_set_hl` for every group, and set `terminal_color_0..15`.
+`vim.uv.new_tcp()` bound to `127.0.0.1:0`; minimal HTTP/1.1: request line, headers, `Content-Length` bodies only (no chunked uploads), `Connection: close` except the SSE stream. libuv callbacks run in a fast context, so every Neovim API call is wrapped in `vim.schedule`. Routes:
 
-The lab previews by calling `load(variant, { [slot] = candidate })`. Nothing is written to disk. Group modules are also re-required on reload while the lab is active: their `package.loaded` entries are cleared before the load.
+| Method | Path | Purpose |
+|---|---|---|
+| GET | `/`, `/app.js`, `/style.css` | page assets |
+| GET | `/api/themes` | theme list with variants |
+| GET | `/api/theme/<name>` | palettes, theme semantics, default semantics, reference, slot metadata |
+| POST | `/api/create` | D5 |
+| POST | `/api/preview` | apply overrides live in Neovim, return rendered samples (D8) |
+| POST | `/api/save` | D10 |
+| POST | `/api/close` | discard session (also triggered by D11) |
+| GET | `/api/events` | server-sent events: `changed` when theme files change on disk; keep-alive every 15 s |
 
-### D5. Lab picking order and slot list
+The page debounces preview requests (~60 ms) while dragging a picker.
 
-The lab's slot list is an ordered array in `lab/candidates.lua`, following the agreed order: foundation (`bg`, `fg`, `mantle`, `crust`, `surface`, `overlay`), quiet (`muted`/comment, line numbers, punctuation), loud by frequency (keyword, control keyword, function, string, type, constant, number, property/variable, parameter, decorator), signals (diagnostics, git, diff backgrounds), UI (selection, search, cursorline, float, border, pmenu), and ANSI brights. Each entry is `{ slot = "accent.blue", label = "keyword (storage)", on = "base.bg", candidates = { "#…", … } }`. Candidate 1 is injected from the reference palette at runtime, not stored in the file, so it can't drift. The candidates file is plain data that Claude rewrites between rounds in chat. The lab watches it with a `BufWritePost` autocmd (or an fs watcher if edited externally) and re-reads it.
+### D7. Access control
 
-Contrast is calculated with the WCAG 2.x relative-luminance formula against the slot's `on` colour. The threshold is 4.5:1 for text slots; background and border slots show the ratio without a warning.
+A 128-bit token from `vim.uv.random` is put in the opened URL (`/?t=…`); the page sends it back as `X-Vale-Token` (and `?t=` for the SSE stream). Rejected with 403: wrong or missing token; `Host` other than `127.0.0.1:<port>`/`localhost:<port>` (DNS-rebinding guard); POSTs with an `Origin` other than the studio's own. Static assets need the token too, so the port reveals nothing.
 
-### D6. Locking rewrites a single line
+### D8. Preview rendering in Neovim
 
-`writer.lua` reads the palette file and finds the line matching `^%s*<key>%s*=%s*"#%x%x%x%x%x%x"` inside the right block. It replaces only the hex literal and writes the file back. If the pattern matches zero or multiple lines, it refuses and notifies. It never re-serialises the table, which would destroy comments and ordering. If the palette buffer is open and modified, the lock is refused to avoid clobbering unsaved edits.
+Each sample is loaded once per session into a hidden scratch buffer with its filetype; its treesitter captures (highlights query, including injections) are collected once as `(row, col_start, col_end, capture, priority)`. On every preview, after the overrides are applied, each distinct capture group is resolved with `nvim_get_hl(0, { name = "@capture.lang", link = false })` (falling back through the capture's dotted parents to the base group), overlapping captures are flattened by priority/order the way the highlighter does, and the page receives per sample `{ lines, spans: [{row, s, e, fg, bg, bold, italic, underline}], normal: {fg, bg}, linenr, cursorline }`. Only colour resolution repeats per preview, so it stays in the low milliseconds.
 
-### D7. Lab layout
+### D9. Page
 
-The lab opens in a new tab: a 2×3 grid of sample windows, a full-height right-hand panel (scratch buffer; swatches are `████` with a per-hex highlight group recreated after every load, since `hi clear` wipes them) and a two-line palette strip under the grid. `<Tab>` pages through sample sets; the last page includes a terminal printing the 16 ANSI colours, `ls --color` and a coloured `git log` (restarted on ANSI slots, since terminal colours are fixed when a terminal starts). Keys, buffer-local to lab buffers and removed on close: `]c`/`[c` cycle candidates, `]s`/`[s` move between slots, `<CR>` locks, `v` toggles night/day, `q` closes and restores the previous colorscheme, `Q` closes and keeps the vale variant. `TabClosed` also restores (spec: Lab workspace). The LSP-attached indicator per sample is listed in the panel rather than the winbar, because barbecue owns the winbar in code buffers. Locked marks persist in `stdpath("state")/vale-lab.json`. Hot reload uses `fs_event` watchers on the vale directories (debounced), so edits made outside Neovim, such as candidate files written between rounds, are picked up as well as `:write`.
+Plain ES modules, no framework. Theme list view; new-theme form; editor view with a night/day toggle, slots grouped by `slots.lua` groups, each row: swatch, hex input (validated `#RRGGBB`), native `<input type="color">`, reset (to saved value), contrast vs its `on` colour (WCAG 2.x, computed in JS, marked under 4.5:1 for text slots), and a variations row computed in JS in OKLCH (lightness ±0.05/±0.10, chroma ±0.03, clamped to sRGB). A "Roles" section lists every semantic role with a `<select>` of palette names plus "plain text"; roles differing from the shared default are marked. Preview pane with a tab per sample. Unsaved slots and roles are highlighted; Save/Discard buttons.
 
-### D8. LSP samples
+### D10. Saving
 
-The C# sample lives in `lab/samples/csharp/` next to a minimal SDK-style `Sample.csproj`, and Java in `lab/samples/java/` with a minimal `pom.xml`, so roslyn/jdtls detect a project root. Other languages rely on treesitter plus whatever server the language pack attaches (lua_ls, basedpyright/pyright, ts, rust-analyzer without Cargo is limited, so add a tiny `Cargo.toml`). The samples are content, not code paths: they only need to exercise the token checklist.
+The writer computes every changed palette line first (single-line substitution inside the right block; refuses on 0 or >1 matches), then writes each palette file once, so a failed edit writes nothing. If a palette file's buffer is modified in Neovim, the save is refused. `themes/<name>/semantics.lua` is regenerated from the effective overrides (a small generated data file with a header comment; roles equal to the default are omitted; the file is deleted when empty). After saving, the session's overrides reset and the theme reloads from disk.
 
-### D9. Integration with existing modules
+### D11. Session and lifecycle
 
-- **Themery:** prepend `{ name = "Vale Night", colorscheme = "vale-night" }` and `{ name = "Vale Day (light)", colorscheme = "vale-day" }`, and change the fallback to `vale-night`.
-- **Rule: config outside vale never references vale.** Wherever the config sets colours itself (so a colorscheme alone cannot reach them), it reads them from standard highlight groups of whatever theme is active.
-- **Lualine:** `theme = "auto"` looks up `lualine.themes.<colors_name>`, so vale ships `lua/lualine/themes/vale-night.lua` and `vale-day.lua` (the same way catppuccin/tokyonight ship theirs; optional, since auto would otherwise derive one). The four component colours become draw-time functions returning the fg of `DiagnosticError`, `DiagnosticInfo`, `DiagnosticOk` and `Statement`, with the old hex as fallback.
-- **Neo-tree:** the forced folder colour stays `#E5C07B` unless the active theme defines a `FolderIcon` group, a name no third-party theme uses (checked against all 17 installed). Vale defines it; so vale gets its own folder colour and every other theme keeps the old yellow.
-- **Octo:** the existing `ColorScheme` rebuild first re-reads octo's `config.colors` from standard groups (`DiagnosticOk/Error/Warn/Info`, `Function`, `Statement`, `LineNr`, `Normal`), so octo follows every theme, vale included. No vale-specific octo module.
-- **rainbow-delimiters:** its `RainbowDelimiter*` groups are defined in the integration module. Whether to adopt VS Code's bracket-pair colours is decided during picking (D3).
+Opening an editor records the active colorscheme, then activates the edited theme variant. Discard (button, `/api/close`, `:Vale stop`, `VimLeavePre`, or the last SSE stream disconnecting for 30 s) drops overrides and reloads the recorded colorscheme, or the saved theme if it was the active one. The server stops when no stream has been connected for 30 s, on `:Vale stop`, and on `VimLeavePre`.
 
-### D10. Reference values are verified before round 1
+### D12. Themery discovery
 
-`reference/vscode_modern.lua` is filled from `microsoft/vscode` `extensions/theme-defaults/themes/` (`dark_modern.json` → `dark_plus.json` → `dark_vs.json` include chain, and the light equivalents). Each value records its source file and the token scope or colour key. The values quoted during exploration were from memory and are not trusted until they are checked.
+`lua/plugins/theme.lua` globs `stdpath("config") .. "/colors/*.lua"` at setup and prepends one entry per file, named after the colorscheme. It references no theme by name except the first-launch fallback (`vale-night`). Themes created in a session appear in Themery after restart (they load immediately via `:colorscheme` and the studio).
+
+### D13. Hot reload
+
+`fs_event` watchers on the edited theme's directory (and, during development, `lua/vale/`) debounce changes, reload the active theme if it is a vale theme, and push `changed` over SSE so the page re-fetches the theme.
+
+### D14. Theme-agnostic config (kept from earlier)
+
+Configuration outside vale never names vale: lualine labels read `DiagnosticError/Info/Ok`/`Statement`; neo-tree uses a theme's `FolderIcon` group when defined, else `#E5C07B`; octo's palette is re-read from standard groups on every `ColorScheme`.
+
+### D15. VS Code reference (kept)
+
+`reference/vscode_modern.lua` values come from `microsoft/vscode` theme JSON include chains and colour registries, each with its source; it is the "start from VS Code" source for D5 and the reset baseline shown in the studio for vale.
 
 ## Risks / Trade-offs
 
-- [Coverage drifts as plugins are added] → The integration list is in the spec, and there is a task to grep plugins' `nvim_set_hl`/`default = true` groups. When a plugin is added later, its integration file belongs in the same change.
-- [Live preview with themery or lab is slow if loads are heavy] → Loads build a few hundred tables with no I/O except the palette `dofile`. If it's measurably slow (>20 ms), cache the merged groups per palette mtime.
-- [Treesitter capture names change across nvim-treesitter `main` updates] → Target Neovim 0.12's documented capture list, with `:Inspect` spot-checks in the lab.
-- [Roslyn/jdtls slow to attach in the lab] → Semantic-token slots are picked last within the "loud" phase. The lab shows whether an LSP is attached per sample in the window's winbar.
-- [Lock writer fails on a hand-reformatted palette] → It refuses loudly (D6). The palette format rule (one entry per line) is written in the palette file's header comment.
-- [Picking stalls, leaving placeholders] → Both palettes start fully populated with VS Code reference values, so vale is usable and looks like VS Code Modern from the first commit. Picking only refines it.
+- [Hand-rolled HTTP parsing] → The server only serves its own page: reject anything unexpected (bad request line, missing Content-Length on POST, bodies > 1 MB) with 400/413 and close.
+- [Fast-context API errors in uv callbacks] → All Neovim calls go through `vim.schedule`; one wrapper per route.
+- [Browser does not open] → The URL is always printed; `vim.ui.open` errors are reported, not fatal.
+- [Preview speed while dragging a picker] → Debounce in the page, captures cached per session, only colour resolution repeats; Neovim-side `:colorscheme` load is ~1.5 ms.
+- [Save racing a hand edit] → Refuse when the palette buffer is modified; the writer refuses ambiguous lines.
+- [Plugin extraction later] → Theme data already lives outside `lua/vale/`; the only config coupling is `plugins/theme.lua` (`:Vale` command, discovery), which is generic.
+- [Coverage drifts as plugins are added] → Integration list in the spec; a new plugin's integration module belongs to the change that adds it.
 
 ## Migration Plan
 
-This is additive. After the Themery change, users with a persisted Themery selection keep it. Only first launches (with no state) default to vale-night. Rollback means removing the two Themery entries and restoring the `catppuccin-mocha` fallback. The lualine and neo-tree fallbacks keep other themes unchanged.
+Within this change (nothing released): move `lua/vale/palettes/{night,day}.lua` to `themes/vale/`, move the day folder override into `themes/vale/semantics.lua`, regenerate `colors/vale-*.lua` and the lualine shims with the `(name, variant)` form, move `lua/vale/lab/samples/` to `lua/vale/samples/`, turn `lab/candidates.lua` into `slots.lua` (metadata only), move the writer into `studio/`, and remove `lab/init.lua`, `lab/panel.lua`, `lab/contrast.lua` and `:ValeLab`. The persisted lab state file (`stdpath("state")/vale-lab.json`) is no longer read. Themery users keep their persisted selection by name.
 
 ## Open Questions
 
-- Exact base shade count (8 may become 10 once foundation picking shows where sidebars, floats and cursorline need separate steps). This can be answered during picking without changing structure.
+- Base shade count (currently 14 base slots) can grow during tuning; adding a key means adding it to `template.lua`, the reference and every theme's palettes, which the generator could automate later.
