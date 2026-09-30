@@ -101,6 +101,23 @@ local function restore_neotree_state()
       manager.get_state("filesystem").force_open_folders = data.nodes
     end
     if data.is_open then
+      -- :restart writes its own session (vim/_core/server.lua) with the tree
+      -- still open, so the new instance can hold a foreign "neo-tree filesystem
+      -- [1]" buffer. Neo-tree names its fresh sidebar buffer without checking
+      -- for one (E95: Buffer with this name already exists) — wipe every such
+      -- buffer neo-tree itself doesn't own before opening.
+      local owned = {}
+      pcall(manager._for_each_state, nil, function(state)
+        if state.bufnr then
+          owned[state.bufnr] = true
+        end
+      end)
+      for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+        local name = vim.fs.basename(vim.api.nvim_buf_get_name(buf))
+        if not owned[buf] and name:match("^neo%-tree [^ ]+ %[%d+%]$") then
+          pcall(vim.api.nvim_buf_delete, buf, { force = true })
+        end
+      end
       -- "show" opens the sidebar without stealing focus from the restored buffer
       require("neo-tree.command").execute({ action = "show" })
     end
