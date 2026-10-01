@@ -6,5 +6,6 @@ require("plugins")
 require("config.clipboard") -- after plugins so its startup notify renders via noice
 require("langs").setup()
 require("config.keymaps")
+require("config.leader_doctor").setup()
 require("config.autocmds")
 require("config.workspace").setup()
