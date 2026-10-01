@@ -65,6 +65,15 @@ end
 function M.setup()
   require("bufferline").setup({
     options = {
+      -- The default "bdelete! %d" closes the buffer's windows too: with only
+      -- neo-tree left, its close_if_last_window then quits Neovim. Keep the
+      -- window and refuse to drop unsaved changes instead.
+      close_command = function(buf)
+        require("config.buffers").close(buf)
+      end,
+      right_mouse_command = function(buf)
+        require("config.buffers").close(buf)
+      end,
       diagnostics = "nvim_lsp",
       separator_style = "thin",
       always_show_bufferline = true,
