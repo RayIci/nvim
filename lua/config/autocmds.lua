@@ -64,3 +64,29 @@ vim.api.nvim_create_autocmd("SwapExists", {
     end
   end,
 })
+
+-- Pick up changes made outside Neovim (Claude, git in another terminal).
+-- Nothing notifies Neovim of them: buffers reload only on :checktime (which
+-- Neovim itself runs just on focus gain), so gitsigns keeps diffing the stale
+-- buffer; neo-tree's watchers cover .git and *expanded* folders only, so
+-- edits inside collapsed folders never update its git status. Refresh both at
+-- natural pauses — focus/terminal changes immediately, idle cursor throttled.
+local last_external_refresh = 0
+vim.api.nvim_create_autocmd({ "FocusGained", "TermLeave", "BufEnter", "CursorHold", "CursorHoldI" }, {
+  group = augroup("external_changes"),
+  callback = function(ev)
+    local now = vim.uv.now()
+    local throttled = ev.event == "CursorHold" or ev.event == "CursorHoldI" or ev.event == "BufEnter"
+    if throttled and now - last_external_refresh < 2000 then
+      return
+    end
+    last_external_refresh = now
+    if vim.fn.getcmdwintype() == "" then
+      pcall(vim.cmd.checktime) -- reloads changed buffers; gitsigns re-diffs on reload
+    end
+    local events = package.loaded["neo-tree.events"]
+    if events then
+      events.fire_event(events.GIT_EVENT) -- neo-tree reruns git status and redraws
+    end
+  end,
+})
