@@ -81,6 +81,47 @@ local function schedule_neotree_save()
   end))
 end
 
+---:restart writes its own session (vim/_core/server.lua) with the tree still
+---open, so the new instance gets a foreign "neo-tree filesystem [1]" buffer:
+---named and filetyped like neo-tree's, but empty and unknown to it. Neo-tree
+---names its fresh sidebar buffer without checking for one (E95: Buffer with
+---this name already exists), so wipe every such buffer neo-tree doesn't own.
+---@return boolean shown whether any wiped buffer was displayed in a window
+local function wipe_foreign_neotree_buffers()
+  local ok, manager = pcall(require, "neo-tree.sources.manager")
+  if not ok then
+    return false
+  end
+  local owned = {}
+  pcall(manager._for_each_state, nil, function(state)
+    if state.bufnr then
+      owned[state.bufnr] = true
+    end
+  end)
+  local shown = false
+  for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+    local name = vim.fs.basename(vim.api.nvim_buf_get_name(buf))
+    if not owned[buf] and name:match("^neo%-tree [^ ]+ %[%d+%]$") then
+      -- Vacate its windows first: closing a tab's last window fails (E444),
+      -- so that one gets an empty buffer like :enew instead. Floats (noice
+      -- popups) don't count — they can't stand in as the last window.
+      for _, win in ipairs(vim.fn.win_findbuf(buf)) do
+        shown = true
+        local splits = vim.tbl_filter(function(w)
+          return vim.api.nvim_win_get_config(w).relative == ""
+        end, vim.api.nvim_tabpage_list_wins(vim.api.nvim_win_get_tabpage(win)))
+        if #splits > 1 then
+          pcall(vim.api.nvim_win_close, win, true)
+        else
+          vim.api.nvim_win_set_buf(win, vim.api.nvim_create_buf(true, false))
+        end
+      end
+      pcall(vim.api.nvim_buf_delete, buf, { force = true })
+    end
+  end
+  return shown
+end
+
 ---Reopen neo-tree with its previous expansion state after a session restore.
 ---Deferred so the restored window layout settles first (old-config timing).
 local function restore_neotree_state()
@@ -101,23 +142,7 @@ local function restore_neotree_state()
       manager.get_state("filesystem").force_open_folders = data.nodes
     end
     if data.is_open then
-      -- :restart writes its own session (vim/_core/server.lua) with the tree
-      -- still open, so the new instance can hold a foreign "neo-tree filesystem
-      -- [1]" buffer. Neo-tree names its fresh sidebar buffer without checking
-      -- for one (E95: Buffer with this name already exists) — wipe every such
-      -- buffer neo-tree itself doesn't own before opening.
-      local owned = {}
-      pcall(manager._for_each_state, nil, function(state)
-        if state.bufnr then
-          owned[state.bufnr] = true
-        end
-      end)
-      for _, buf in ipairs(vim.api.nvim_list_bufs()) do
-        local name = vim.fs.basename(vim.api.nvim_buf_get_name(buf))
-        if not owned[buf] and name:match("^neo%-tree [^ ]+ %[%d+%]$") then
-          pcall(vim.api.nvim_buf_delete, buf, { force = true })
-        end
-      end
+      wipe_foreign_neotree_buffers()
       -- "show" opens the sidebar without stealing focus from the restored buffer
       require("neo-tree.command").execute({ action = "show" })
     end
@@ -177,6 +202,21 @@ function M.setup()
       nt_events.subscribe({ event = ev, handler = schedule_neotree_save })
     end
   end
+
+  -- Any session load, not just auto-session's: when no auto-session file
+  -- exists (auto_delete_empty_sessions drops it once only the tree is left),
+  -- the :restart session is the only one sourced and post_restore_cmds never
+  -- run. Swap its empty neo-tree stand-in for the real tree.
+  vim.api.nvim_create_autocmd("SessionLoadPost", {
+    group = vim.api.nvim_create_augroup("config.auto-session.neotree-ghost", { clear = true }),
+    callback = function()
+      if wipe_foreign_neotree_buffers() then
+        vim.defer_fn(function()
+          require("neo-tree.command").execute({ action = "show" })
+        end, 200)
+      end
+    end,
+  })
 
   -- Backstop snapshot. Registered before auto-session.setup() so this fires
   -- first: it captures is_open while the window still exists and raises the
