@@ -8,6 +8,18 @@ map("n", "<Esc>", "<cmd>nohlsearch<cr>", { desc = "Clear search highlight" })
 
 -- Window navigation: <C-h/j/k/l> come from vim-tmux-navigator, which also
 -- crosses into tmux panes and falls back to plain window movement outside tmux.
+-- Its default mappings are disabled and the normal-mode ones defined here:
+-- inside tmux it also adds terminal-mode maps using Vim's `<C-w>:` escape,
+-- which Neovim terminals don't have, so `<C-w>: TmuxNavigateRight<CR>` gets
+-- typed into the running program (in lazygit, `T` + the rest created
+-- `muxNavigate*` tags). Terminal maps come from toggleterm instead. Runs
+-- during init.lua, before the plugin's script is sourced and reads the flag.
+vim.g.tmux_navigator_no_mappings = 1
+map("n", "<C-h>", "<cmd>TmuxNavigateLeft<cr>", { desc = "Window/pane left" })
+map("n", "<C-j>", "<cmd>TmuxNavigateDown<cr>", { desc = "Window/pane down" })
+map("n", "<C-k>", "<cmd>TmuxNavigateUp<cr>", { desc = "Window/pane up" })
+map("n", "<C-l>", "<cmd>TmuxNavigateRight<cr>", { desc = "Window/pane right" })
+map("n", "<C-\\>", "<cmd>TmuxNavigatePrevious<cr>", { desc = "Previous window/pane" })
 
 -- Save
 map("n", "<C-s>", "<cmd>w<cr>", { desc = "Save file" })
