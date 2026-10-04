@@ -30,6 +30,7 @@ local exclude_filetypes = {
   "sidekick_terminal",
   "NeogitStatus",
   "octo",
+  "oil",
 }
 
 function M.setup()

@@ -51,6 +51,7 @@ require("plugins.bufferline").setup()
 require("plugins.barbecue").setup()
 require("plugins.scope").setup()
 require("plugins.neotree").setup()
+require("plugins.oil").setup()
 require("plugins.auto-session").setup()
 
 -- Editing QoL

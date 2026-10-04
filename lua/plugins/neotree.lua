@@ -134,7 +134,6 @@ function M.setup()
   })
 
   vim.keymap.set("n", "<leader>e", "<cmd>Neotree toggle<cr>", { desc = "File explorer" })
-  vim.keymap.set("n", "<leader>E", "<cmd>Neotree reveal<cr>", { desc = "Reveal file in explorer" })
 
   set_folder_icon_hl()
   vim.api.nvim_create_autocmd("ColorScheme", {

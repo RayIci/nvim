@@ -98,6 +98,7 @@ vim.pack.add({
   gh("SmiteshP/nvim-navic"),
   gh("utilyre/barbecue.nvim"),
   gh("nvim-neo-tree/neo-tree.nvim"),
+  gh("stevearc/oil.nvim"),
   gh("akinsho/toggleterm.nvim"),
   gh("tiagovla/scope.nvim"),
   gh("s1n7ax/nvim-window-picker"),

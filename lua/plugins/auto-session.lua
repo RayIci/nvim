@@ -236,7 +236,7 @@ function M.setup()
     auto_restore = true, -- only fires on argument-less startup with a saved session
     show_auto_restore_notif = false,
     -- Keep plugin windows out of saved sessions
-    bypass_save_filetypes = { "neo-tree", "trouble", "OverseerList" },
+    bypass_save_filetypes = { "neo-tree", "trouble", "OverseerList", "oil" },
     -- scope.nvim per-tab buffer state rides the session as a global variable
     -- ('globals' is in sessionoptions), old-config integration.
     pre_save_cmds = { "ScopeSaveState" },
