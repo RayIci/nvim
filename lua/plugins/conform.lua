@@ -2,8 +2,20 @@
 ---@class PluginConform
 local M = {}
 
+---Per-buffer formatter override (`vim.b.conform_formatters`), e.g. notebooks
+---that must skip formatters unsafe for them. nil = the filetype's formatters.
+---@param bufnr integer
+---@return string[]?
+local function buffer_formatters(bufnr)
+  return vim.b[bufnr].conform_formatters
+end
+
 local function format()
-  require("conform").format({ async = true, lsp_format = "fallback" })
+  require("conform").format({
+    async = true,
+    lsp_format = "fallback",
+    formatters = buffer_formatters(0),
+  })
 end
 
 local function save_without_format()
@@ -49,7 +61,7 @@ function M.apply(formatters_by_ft)
       if not require("config.prefs").get("format_on_save", true) then
         return nil
       end
-      return { timeout_ms = 1000, lsp_format = "fallback" }
+      return { timeout_ms = 1000, lsp_format = "fallback", formatters = buffer_formatters(bufnr) }
     end,
   })
 end

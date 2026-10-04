@@ -166,6 +166,10 @@
       "rev": "f8674ec894315c02449b61c9de9a116c5aafeb90",
       "src": "https://github.com/NeogitOrg/neogit"
     },
+    "neopyter": {
+      "rev": "ede156ea0fbfc7ec0920302f624f7b6c27735cfc",
+      "src": "https://github.com/SUSTech-data/neopyter"
+    },
     "neotest": {
       "rev": "4e2cd42c4252ee9d2435571d9adcdbc1d47931fe",
       "src": "https://github.com/nvim-neotest/neotest"
@@ -411,6 +415,10 @@
     "vimtex": {
       "rev": "6368e31fdaf766ff908a2c06e9ee14fc66dec409",
       "src": "https://github.com/lervag/vimtex"
+    },
+    "websocket.nvim": {
+      "rev": "5bf3935923ef1c81cbf75451138918fd4832c428",
+      "src": "https://github.com/AbaoFromCUG/websocket.nvim"
     },
     "which-key.nvim": {
       "rev": "3aab2147e74890957785941f0c1ad87d0a44c15a",
