@@ -50,7 +50,10 @@ function M.setup()
     -- Merged with oil's defaults: <BS> goes up a directory, like `-`. Splits
     -- mirror tmux's prefix | / -. <C-s> (save), <C-h>/<C-l> (tmux-navigator)
     -- are unmapped so the global maps work in oil; :w applies oil's edits.
+    -- q closes oil, like help/qf windows. It shadows macro recording in oil
+    -- buffers; record with `:normal! qa` there if ever needed.
     keymaps = {
+      ["q"] = { "actions.close", mode = "n" },
       ["<BS>"] = { "actions.parent", mode = "n" },
       ["g|"] = { "actions.select", opts = { vertical = true }, mode = "n" },
       ["g-"] = { "actions.select", opts = { horizontal = true }, mode = "n" },
