@@ -6,7 +6,8 @@
 ---(two-digit major version). Run it under Java 21 via SDKMAN if available.
 ---@return string|nil java_home
 local function find_sdkman_java21()
-  local matches = vim.fn.glob(vim.fn.expand("~/.sdkman/candidates/java/21*/bin/java"), false, true)
+  local pattern = vim.fn.expand("~") .. "/.sdkman/candidates/java/21*/bin/java"
+  local matches = vim.fn.glob(pattern, false, true)
   if #matches > 0 then
     return vim.fn.fnamemodify(matches[1], ":h:h")
   end
