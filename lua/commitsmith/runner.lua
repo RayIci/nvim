@@ -17,6 +17,27 @@ local function notify(msg, level, opts)
   vim.notify(msg, level or vim.log.levels.INFO, vim.tbl_extend("force", { title = "Commitsmith" }, opts or {}))
 end
 
+---`git commit` launches the editor with GIT_INDEX_FILE (and possibly GIT_DIR and
+---friends) pointing at this repository. The harness must not inherit them: any
+---git it runs for itself -- copilot re-cloning its plugin marketplace, say --
+---would read and overwrite this repository's index with another repo's tree.
+---@return table<string, string>
+local function harness_env()
+  local env = vim.fn.environ()
+  for _, name in ipairs({
+    "GIT_INDEX_FILE",
+    "GIT_DIR",
+    "GIT_WORK_TREE",
+    "GIT_COMMON_DIR",
+    "GIT_OBJECT_DIRECTORY",
+    "GIT_ALTERNATE_OBJECT_DIRECTORIES",
+    "GIT_PREFIX",
+  }) do
+    env[name] = nil
+  end
+  return env
+end
+
 ---A session id we can hand to a harness up front, so the first turn already
 ---knows what a later turn must resume. claude and copilot accept one; codex
 ---ignores it and reports its own, which the adapter picks up instead.
@@ -227,7 +248,7 @@ local function dispatch(conversation, opts)
   start_spinner(conversation, label(name, model))
   session.changed(conversation)
 
-  local system_opts = { text = true }
+  local system_opts = { text = true, env = harness_env(), clear_env = true }
   if invocation.stdin ~= nil then
     system_opts.stdin = invocation.stdin
   end
