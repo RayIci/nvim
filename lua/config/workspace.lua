@@ -30,35 +30,42 @@ local state_dir = vim.fn.stdpath("state") --[[@as string]]
 
 ---True once exit has started; blocks late debounced writes racing teardown.
 local exiting = false
+local paused = false
+local generation = 0
 
 ---Filesystem-safe key for the current project.
 ---@return string
-local function project_key()
-  return (vim.fn.getcwd():gsub("[/\\:]", "%%"))
+local function project_key(cwd)
+  return ((cwd or vim.fn.getcwd()):gsub("[/\\:]", "%%"))
 end
 
 ---@return string
-local function json_path()
-  return vim.fs.joinpath(state_dir, "workspaces", project_key() .. ".json")
+local function json_path(cwd)
+  return vim.fs.joinpath(state_dir, "workspaces", project_key(cwd) .. ".json")
 end
 
 ---@return WorkspaceState
-local function load_state()
-  local ok, data = pcall(function()
-    return vim.json.decode(table.concat(vim.fn.readfile(json_path()), "\n"))
-  end)
-  if ok and type(data) == "table" then
-    data.breakpoints = data.breakpoints or {}
-    data.buffers = data.buffers or {}
-    data.pinned = data.pinned or ""
-    return data
+---@return boolean exists
+local function load_state(cwd)
+  local path = json_path(cwd)
+  if not vim.uv.fs_lstat(path) then
+    return { breakpoints = {}, buffers = {}, pinned = "" }, false
   end
-  return { breakpoints = {}, buffers = {}, pinned = "" }
+  local data = vim.json.decode(table.concat(vim.fn.readfile(path), "\n"))
+  assert(type(data) == "table", "Invalid workspace snapshot: " .. path)
+  data.breakpoints = data.breakpoints or {}
+  data.buffers = data.buffers or {}
+  data.pinned = data.pinned or ""
+  assert(
+    type(data.breakpoints) == "table" and type(data.buffers) == "table" and type(data.pinned) == "string",
+    "Invalid workspace snapshot: " .. path
+  )
+  return data, true
 end
 
 ---@param state WorkspaceState
-local function save_state(state)
-  local path = json_path()
+local function save_state(state, cwd)
+  local path = json_path(cwd)
   local dir = vim.fs.dirname(path)
   if vim.fn.isdirectory(dir) == 0 then
     vim.fn.mkdir(dir, "p")
@@ -71,12 +78,7 @@ end
 local function collect_breakpoints()
   ---@type table<string, WorkspaceBreakpoint[]>
   local by_file = {}
-  local ok, bps = pcall(function()
-    return require("dap.breakpoints").get()
-  end)
-  if not ok then
-    return by_file
-  end
+  local bps = require("dap.breakpoints").get()
   for bufnr, list in pairs(bps) do
     local file = vim.api.nvim_buf_get_name(bufnr)
     if file ~= "" then
@@ -98,8 +100,17 @@ end
 ---@return string[]
 local function collect_buffers()
   local files = {}
+  local scoped = {}
+  local scope = package.loaded["scope.core"]
+  if scope then
+    for _, buffers in pairs(scope.cache) do
+      for _, buf in ipairs(buffers) do
+        scoped[buf] = true
+      end
+    end
+  end
   for _, buf in ipairs(vim.api.nvim_list_bufs()) do
-    if vim.api.nvim_buf_is_valid(buf) and vim.bo[buf].buflisted then
+    if vim.api.nvim_buf_is_valid(buf) and (vim.bo[buf].buflisted or scoped[buf]) then
       local name = vim.api.nvim_buf_get_name(buf)
       if name ~= "" and vim.fn.filereadable(name) == 1 then
         table.insert(files, name)
@@ -134,8 +145,8 @@ end
 ---Write the full workspace snapshot. Breakpoints merge (files with loaded
 ---buffers are authoritative, including deletions; unopened files keep their
 ---stored breakpoints); buffers and pins are plain snapshots.
-local function persist()
-  local state = load_state()
+local function persist(cwd)
+  local state = load_state(cwd)
   local current = collect_breakpoints()
   for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
     if vim.api.nvim_buf_is_loaded(bufnr) then
@@ -150,22 +161,50 @@ local function persist()
   end
   state.buffers = collect_buffers()
   state.pinned = vim.g.BufferlinePinnedBuffers or ""
-  save_state(state)
+  save_state(state, cwd)
 end
 
 local persist_timer = assert(vim.uv.new_timer())
 
+local function report_save(cwd)
+  local ok, err = pcall(persist, cwd)
+  if not ok then
+    vim.notify("Workspace save: " .. tostring(err), vim.log.levels.ERROR)
+  end
+end
+
+function M.pause()
+  paused = true
+  generation = generation + 1
+  persist_timer:stop()
+end
+
+function M.resume()
+  paused = false
+end
+
+function M.flush()
+  generation = generation + 1
+  persist_timer:stop()
+  persist(vim.fn.getcwd())
+end
+
 ---Debounced persist; the single entry point for all change-time triggers.
 function M.touch()
-  if exiting then
+  if exiting or paused then
     return
   end
+  local cwd, token = vim.fn.getcwd(), generation
   persist_timer:stop()
-  persist_timer:start(500, 0, vim.schedule_wrap(function()
-    if not exiting then
-      pcall(persist)
-    end
-  end))
+  persist_timer:start(
+    500,
+    0,
+    vim.schedule_wrap(function()
+      if not exiting and not paused and token == generation and cwd == vim.fn.getcwd() then
+        report_save(cwd)
+      end
+    end)
+  )
 end
 
 ---Wrap every mutating function of dap.breakpoints so any change — from our
@@ -189,16 +228,13 @@ end
 ---opened since then are added back and files closed since then are dropped
 ---(never touching modified or window-displayed buffers). Pins seed
 ---vim.g.BufferlinePinnedBuffers so the bufferline re-sync uses fresh data.
-function M.reconcile_buffers()
-  local state = load_state()
-
-  if state.pinned ~= "" then
-    vim.g.BufferlinePinnedBuffers = state.pinned
-  end
-
-  if #state.buffers == 0 then
+---@param managed? boolean allow replacing stale displayed buffers during a managed restore
+function M.reconcile_buffers(managed)
+  local state, exists = load_state()
+  if not exists then
     return
   end
+  vim.g.BufferlinePinnedBuffers = state.pinned
 
   local want = {}
   for _, file in ipairs(state.buffers) do
@@ -206,8 +242,17 @@ function M.reconcile_buffers()
   end
 
   local have = {}
+  local scope = package.loaded["scope.core"]
+  local scoped = {}
+  if scope then
+    for _, buffers in pairs(scope.cache) do
+      for _, buf in ipairs(buffers) do
+        scoped[buf] = true
+      end
+    end
+  end
   for _, buf in ipairs(vim.api.nvim_list_bufs()) do
-    if vim.bo[buf].buflisted then
+    if vim.bo[buf].buflisted or scoped[buf] then
       local name = vim.api.nvim_buf_get_name(buf)
       if name ~= "" then
         have[name] = true
@@ -222,7 +267,7 @@ function M.reconcile_buffers()
   end
 
   for _, buf in ipairs(vim.api.nvim_list_bufs()) do
-    if vim.bo[buf].buflisted and not vim.bo[buf].modified then
+    if (vim.bo[buf].buflisted or scoped[buf]) and not vim.bo[buf].modified then
       local name = vim.api.nvim_buf_get_name(buf)
       if name ~= "" and not want[name] and vim.fn.filereadable(name) == 1 then
         local displayed = false
@@ -232,10 +277,25 @@ function M.reconcile_buffers()
             break
           end
         end
-        if not displayed then
-          pcall(vim.api.nvim_buf_delete, buf, {})
+        if (managed or #state.buffers == 0) and displayed then
+          require("config.buffers").close(buf)
+        elseif not displayed then
+          vim.api.nvim_buf_delete(buf, {})
         end
       end
+    end
+  end
+end
+
+function M.restore_breakpoints()
+  local state, exists = load_state()
+  if not exists then
+    return
+  end
+  require("dap.breakpoints").clear()
+  for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+    if vim.api.nvim_buf_is_loaded(buf) then
+      restore_breakpoints_for(buf, vim.api.nvim_buf_get_name(buf), state)
     end
   end
 end
@@ -268,8 +328,11 @@ function M.setup()
     group = group,
     callback = function()
       exiting = true
+      generation = generation + 1
       persist_timer:stop()
-      pcall(persist)
+      if not paused then
+        report_save(vim.fn.getcwd())
+      end
     end,
   })
 end

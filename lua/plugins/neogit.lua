@@ -10,6 +10,14 @@ function M.setup()
       diffview = true,
       telescope = true,
     },
+    mappings = {
+      popup = { ["w"] = false },
+      status = {
+        ["w"] = function()
+          require("plugins.worktrees").menu()
+        end,
+      },
+    },
     signs = {
       hunk = { "", "" },
       item = { ">", "v" },
