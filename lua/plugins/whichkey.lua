@@ -15,6 +15,7 @@ function M.setup()
     { "<leader>d", group = "debug" },
     { "<leader>f", group = "find" },
     { "<leader>g", group = "git" },
+    { "<leader>gw", group = "worktrees" },
     { "<leader>gd", group = "diffview" },
     { "<leader>gC", group = "conflict" },
     { "<leader>gh", group = "github" },

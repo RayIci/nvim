@@ -14,8 +14,8 @@ local M = {}
 ---@field is_open boolean whether a neo-tree window was open at exit
 
 ---@return string
-local function neotree_state_path()
-  local key = (vim.fn.getcwd():gsub("[/\\:]", "%%"))
+local function neotree_state_path(cwd)
+  local key = ((cwd or vim.fn.getcwd()):gsub("[/\\:]", "%%"))
   return vim.fs.joinpath(vim.fn.stdpath("state") --[[@as string]], "neotree", key .. ".json")
 end
 
@@ -23,24 +23,25 @@ end
 ---sets it, so the window-close events auto-session fires while tearing windows
 ---down for :mksession don't overwrite is_open with false.
 local exiting = false
+local paused = false
+local generation = 0
 
 ---Snapshot expanded directories and open/closed state. Runs on every neo-tree
 ---render/window event (debounced) — exit hooks alone lose state on :restart,
 ---crashes, and kills. If the tree was never materialized this session, the
 ---previously saved expansion list is preserved instead of being wiped.
-local function save_neotree_state()
-  local ok, manager = pcall(require, "neo-tree.sources.manager")
-  if not ok then
-    return
+local function save_neotree_state(cwd)
+  local manager = require("neo-tree.sources.manager")
+  local path = neotree_state_path(cwd)
+  local prev = {}
+  if vim.uv.fs_lstat(path) then
+    prev = vim.json.decode(table.concat(vim.fn.readfile(path), "\n"))
+    assert(type(prev) == "table", "Invalid explorer snapshot: " .. path)
   end
-
-  local prev_ok, prev = pcall(function()
-    return vim.json.decode(table.concat(vim.fn.readfile(neotree_state_path()), "\n"))
-  end)
 
   ---@type NeotreeSessionState
   local snapshot = {
-    nodes = (prev_ok and type(prev) == "table" and prev.nodes) or {},
+    nodes = prev.nodes or {},
     is_open = false,
   }
 
@@ -61,24 +62,62 @@ local function save_neotree_state()
     end
   end
 
-  local path = neotree_state_path()
   vim.fn.mkdir(vim.fs.dirname(path), "p")
   vim.fn.writefile({ vim.json.encode(snapshot) }, path)
 end
 
 local save_timer = assert(vim.uv.new_timer())
 
+local function report(fn)
+  local ok, err = pcall(fn)
+  if not ok then
+    vim.notify("Workspace session: " .. tostring(err), vim.log.levels.ERROR)
+  end
+end
+
+local function defer_restore(fn, delay)
+  local cwd, token = vim.fn.getcwd(), generation
+  vim.defer_fn(function()
+    if not paused and not exiting and generation == token and cwd == vim.fn.getcwd() then
+      report(fn)
+    end
+  end, delay)
+end
+
+function M.pause()
+  paused = true
+  generation = generation + 1
+  save_timer:stop()
+end
+
+function M.resume()
+  paused = false
+end
+
+function M.flush()
+  generation = generation + 1
+  save_timer:stop()
+  save_neotree_state(vim.fn.getcwd())
+end
+
 ---Debounced event-driven save; ignored once exit has started.
 local function schedule_neotree_save()
-  if exiting then
+  if exiting or paused then
     return
   end
+  local cwd, token = vim.fn.getcwd(), generation
   save_timer:stop()
-  save_timer:start(500, 0, vim.schedule_wrap(function()
-    if not exiting then
-      pcall(save_neotree_state)
-    end
-  end))
+  save_timer:start(
+    500,
+    0,
+    vim.schedule_wrap(function()
+      if not exiting and not paused and generation == token and cwd == vim.fn.getcwd() then
+        report(function()
+          save_neotree_state(cwd)
+        end)
+      end
+    end)
+  )
 end
 
 ---:restart writes its own session (vim/_core/server.lua) with the tree still
@@ -124,29 +163,54 @@ end
 
 ---Reopen neo-tree with its previous expansion state after a session restore.
 ---Deferred so the restored window layout settles first (old-config timing).
-local function restore_neotree_state()
-  vim.defer_fn(function()
-    local ok, data = pcall(function()
-      return vim.json.decode(table.concat(vim.fn.readfile(neotree_state_path()), "\n"))
-    end)
-    if not ok or type(data) ~= "table" then
-      return
-    end
-
-    local mok, manager = pcall(require, "neo-tree.sources.manager")
-    if not mok then
-      return
-    end
-
-    if type(data.nodes) == "table" and #data.nodes > 0 then
-      manager.get_state("filesystem").force_open_folders = data.nodes
-    end
-    if data.is_open then
-      wipe_foreign_neotree_buffers()
-      -- "show" opens the sidebar without stealing focus from the restored buffer
+---@param managed? boolean
+local function restore_neotree_state(managed)
+  local path = neotree_state_path()
+  if not vim.uv.fs_lstat(path) then
+    return
+  end
+  local data = vim.json.decode(table.concat(vim.fn.readfile(path), "\n"))
+  assert(type(data) == "table" and type(data.nodes) == "table", "Invalid explorer snapshot: " .. path)
+  local manager = require("neo-tree.sources.manager")
+  manager.dispose("filesystem", vim.api.nvim_get_current_tabpage())
+  local state = manager.get_state("filesystem")
+  state.force_open_folders = data.nodes
+  if data.is_open then
+    wipe_foreign_neotree_buffers()
+    if not managed then
       require("neo-tree.command").execute({ action = "show" })
+      return
     end
-  end, 200)
+    local events = require("neo-tree.events")
+    local rendered = false
+    local cwd, token = vim.fn.getcwd(), generation
+    local handler = {
+      id = "config.workspace.restore",
+      event = events.AFTER_RENDER,
+      handler = function(rendered_state)
+        if rendered_state == state then
+          rendered = true
+        end
+      end,
+    }
+    events.subscribe(handler)
+    local ok, err = pcall(function()
+      require("neo-tree.command").execute({ action = "show" })
+      local finished = vim.wait(10000, function()
+        return rendered or generation ~= token or vim.fn.getcwd() ~= cwd
+      end, 10)
+      assert(
+        finished and rendered and generation == token and vim.fn.getcwd() == cwd,
+        "Explorer restoration did not complete for " .. cwd
+      )
+    end)
+    events.unsubscribe(handler)
+    if not ok then
+      error(err, 0)
+    end
+  else
+    manager.close_all()
+  end
 end
 
 ---Sync bufferline's pinned group to vim.g.BufferlinePinnedBuffers (seeded from
@@ -154,41 +218,102 @@ end
 ---the session file). Pins missing from bufferline are added; pins bufferline
 ---restored from a stale session file but that are no longer pinned are removed.
 local function load_pinned_buffers()
-  vim.defer_fn(function()
-    local ok_groups, groups = pcall(require, "bufferline.groups")
-    local ok_state, state = pcall(require, "bufferline.state")
-    if not (ok_groups and ok_state and state.components) then
-      return
-    end
+  local groups = require("bufferline.groups")
+  local Buffer = require("bufferline.models").Buffer
 
-    local pinned_str = vim.g.BufferlinePinnedBuffers or ""
-    local want = {}
-    for _, path in ipairs(vim.split(pinned_str, ",")) do
-      if path ~= "" then
-        local buf_id = vim.fn.bufnr(path)
-        if buf_id ~= -1 then
-          want[buf_id] = true
-        end
+  local pinned_str = vim.g.BufferlinePinnedBuffers or ""
+  local want = {}
+  for _, path in ipairs(vim.split(pinned_str, ",")) do
+    if path ~= "" then
+      local buf_id = vim.fn.bufnr(path)
+      if buf_id ~= -1 then
+        want[buf_id] = true
       end
     end
+  end
 
-    for _, component in ipairs(state.components) do
-      local pinned = groups._is_pinned(component)
-      if want[component.id] and not pinned then
-        groups.add_element("pinned", component)
-      elseif not want[component.id] and pinned then
-        pcall(groups.remove_element, "pinned", component)
-      end
+  for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+    -- Bufferline's constructor populates its component fields.
+    ---@diagnostic disable-next-line: missing-fields
+    local component = Buffer:new({ id = buf, path = vim.api.nvim_buf_get_name(buf) })
+    local pinned = groups._is_pinned(component)
+    if want[component.id] and not pinned then
+      groups.add_element("pinned", component)
+    elseif not want[component.id] and pinned then
+      groups.remove_element("pinned", component)
     end
+  end
 
-    local ok_ui, ui = pcall(require, "bufferline.ui")
-    if ok_ui then
-      ui.refresh()
+  require("bufferline.ui").refresh()
+end
+
+local function save_scope_state()
+  vim.cmd.ScopeSaveState()
+  local cache = {}
+  local core = require("scope.core")
+  local utils = require("scope.utils")
+  for _, tab in ipairs(vim.api.nvim_list_tabpages()) do
+    cache[#cache + 1] = utils.get_buffer_names(core.cache[tab] or {})
+  end
+  vim.g.ScopeState = vim.json.encode({ cache = cache, last_tab = core.last_tab })
+end
+
+local function restore_scope_state()
+  if not vim.g.ScopeState then
+    return
+  end
+  local saved = vim.json.decode(vim.g.ScopeState)
+  local core = require("scope.core")
+  local utils = require("scope.utils")
+  local cache = {}
+  -- Session files create new tab handles; scope's serialized cache uses tab positions.
+  for index, tab in ipairs(vim.api.nvim_list_tabpages()) do
+    cache[tab] = utils.get_buffer_ids(saved.cache[index] or {})
+  end
+  for _, buffers in pairs(cache) do
+    for _, buf in ipairs(buffers) do
+      vim.bo[buf].buflisted = false
     end
-  end, 500)
+  end
+  core.cache = cache
+  core.last_tab = vim.api.nvim_get_current_tabpage()
+  core.on_tab_enter()
+end
+
+---Managed restores run synchronously; no delayed source-workspace callback can finish them.
+---@param managed? boolean
+function M.restore_workspace(managed)
+  restore_scope_state()
+  require("config.workspace").reconcile_buffers(managed)
+  require("config.workspace").restore_breakpoints()
+  load_pinned_buffers()
+  restore_neotree_state(managed)
+end
+
+function M.reset_workspace()
+  local manager = require("neo-tree.sources.manager")
+  manager.close_all()
+  manager.dispose_invalid_tabs()
+  for _, tab in ipairs(vim.api.nvim_list_tabpages()) do
+    for _, name in ipairs({ "filesystem", "buffers", "git_status" }) do
+      manager.dispose(name, tab)
+    end
+  end
+  local groups = require("bufferline.groups")
+  for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+    groups.remove_id_from_manual_groupings(buf)
+  end
+  vim.g.BufferlinePinnedBuffers = ""
 end
 
 function M.setup()
+  vim.api.nvim_create_autocmd("BufWipeout", {
+    group = vim.api.nvim_create_augroup("config.auto-session.pins", { clear = true }),
+    callback = function(ev)
+      require("bufferline.groups").remove_id_from_manual_groupings(ev.buf)
+    end,
+  })
+
   -- Primary persistence path: neo-tree's own events. Every render (expand or
   -- collapse re-renders) and window open/close schedules a debounced save, so
   -- the state survives :restart, crashes, and kills.
@@ -210,8 +335,11 @@ function M.setup()
   vim.api.nvim_create_autocmd("SessionLoadPost", {
     group = vim.api.nvim_create_augroup("config.auto-session.neotree-ghost", { clear = true }),
     callback = function()
+      if paused then
+        return
+      end
       if wipe_foreign_neotree_buffers() then
-        vim.defer_fn(function()
+        defer_restore(function()
           require("neo-tree.command").execute({ action = "show" })
         end, 200)
       end
@@ -226,8 +354,13 @@ function M.setup()
     group = vim.api.nvim_create_augroup("config.auto-session.neotree", { clear = true }),
     callback = function()
       exiting = true
+      generation = generation + 1
       save_timer:stop()
-      pcall(save_neotree_state)
+      if not paused then
+        report(function()
+          save_neotree_state(vim.fn.getcwd())
+        end)
+      end
     end,
   })
 
@@ -239,16 +372,25 @@ function M.setup()
     bypass_save_filetypes = { "neo-tree", "trouble", "OverseerList", "oil" },
     -- scope.nvim per-tab buffer state rides the session as a global variable
     -- ('globals' is in sessionoptions), old-config integration.
-    pre_save_cmds = { "ScopeSaveState" },
-    pre_restore_cmds = { "ScopeLoadState" },
+    pre_save_cmds = { save_scope_state },
+    pre_restore_cmds = {
+      function()
+        generation = generation + 1
+        save_timer:stop()
+      end,
+      "ScopeLoadState",
+    },
     post_restore_cmds = {
       -- Reconcile first: it re-adds/drops buffers changed since the (possibly
       -- stale) session save and seeds fresh pin data for the sync below.
       function()
-        require("config.workspace").reconcile_buffers()
+        if not paused then
+          restore_scope_state()
+          require("config.workspace").reconcile_buffers()
+          defer_restore(load_pinned_buffers, 500)
+          defer_restore(restore_neotree_state, 200)
+        end
       end,
-      load_pinned_buffers,
-      restore_neotree_state,
     },
     session_lens = { load_on_setup = true, previewer = false },
   })
