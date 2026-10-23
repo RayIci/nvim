@@ -53,6 +53,7 @@ require("plugins.scope").setup()
 require("plugins.neotree").setup()
 require("plugins.oil").setup()
 require("plugins.auto-session").setup()
+require("plugins.worktrees").setup()
 
 -- Editing QoL
 require("plugins.surround").setup()

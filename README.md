@@ -68,6 +68,60 @@ re-sync). Neo-tree's expanded folders and open/closed state persist beside the s
 and are reapplied on restore. DAP breakpoints (line/condition/log) persist separately to
 `stdpath('state')` via the workspace module and reappear per file on open, session or not.
 
+Buffers, pins, breakpoints, and explorer state also save at mutation time (debounced),
+so they survive `:restart` without relying on exit hooks. The existing locations remain
+`stdpath('state')/workspaces/<cwd-key>.json` and `stdpath('state')/neotree/<cwd-key>.json`.
+Managed transitions flush the source snapshots and invalidate pending saves/restores
+before resetting editor state. Existing empty snapshots clear stale state; missing
+sidecars leave valid session-restored state alone.
+
+## Git worktree workspaces
+
+`<leader>gww` switches the whole workspace in this Neovim instance; `<leader>gwc`
+creates a checkout and switches to it; `<leader>gwd` removes an inactive checkout.
+Neogit's status-buffer `w` opens the same managed menu. Branch selection uses Telescope;
+the destination input contains a real, editable absolute default.
+
+For a main checkout `/work/client/backend` and branch `feature/login`, the suggested
+path is `/work/client/backend.worktrees/feature/login`. No parent folder name is special.
+Git's registered main checkout anchors this path even when creation starts from
+`backend.worktrees/another-branch`, a subdirectory, or an external linked checkout
+such as `/tmp/review-backend`. Branch slashes remain subdirectories. Absolute and `~/`
+overrides work; relative overrides resolve against the main checkout. Empty or occupied
+destinations (including symlinks) are rejected. Cancelling the prompts creates nothing.
+A usable non-bare main checkout is required; bare-only repositories are unsupported.
+
+Choose a local branch, an available remote-tracking branch, or **Create new branch**.
+New branches start at the invoking checkout's HEAD. A remote selection drops only its
+remote prefix for the local name: an existing local counterpart is reused without a
+reset; otherwise a tracking branch is created. Creation never fetches, rebases, pushes,
+copies ignored files, or installs dependencies. Fetch refs explicitly when needed and
+set up `.env`, dependencies, and virtual environments separately in each checkout.
+
+Switching explicitly saves the outgoing session and sidecars (even with exit autosave
+off, preserving that preference), then replaces buffers, tabs, layout, pins, breakpoints,
+and explorer state with the target's saved state. A first visit starts with one clean
+buffer and a closed explorer unless target sidecars exist. Selecting the current
+checkout does nothing. Hidden and other-tab unsaved buffers must all be saved or the
+switch is cancelled; cancellation is the default. Unnamed/unwritable buffers, live
+Neovim terminal jobs, and active DAP sessions block switching rather than being
+discarded or stopped. External terminals, tmux, servers, and AI processes are untouched
+and retain their original working directories.
+
+If creation succeeds but switching is cancelled or fails, the checkout is retained and
+its path is reported. A failed destination restore attempts to recover the saved source
+session without overwriting the target. If recovery also fails, automatic writes stop
+and the error identifies the current cwd and recoverable source session.
+
+Deletion confirms the exact path and branch, refuses main/current/locked worktrees and
+all modified, staged, untracked, or ignored content, and never forces removal or deletes
+branches or saved editor state. The raw `:Neogit worktree` popup remains an **advanced
+Git-only interface**, not a full workspace switch. Use the managed keys or status `w`
+for session-aware switching; arbitrary `:cd` and external Git commands are not intercepted.
+
+The focused regression runner uses disposable repositories and isolated editor state:
+`nvim --headless -u NONE -l tests/worktrees.lua` (requires the already-installed plugins).
+
 ## Plugin updates
 
 `<leader>pu` (or `:lua vim.pack.update()`) → review buffer → `:write` to apply, `:quit`
@@ -79,6 +133,7 @@ to discard. `nvim-pack-lock.json` is committed; treat it like a lockfile.
 |---|---|
 | `<leader>f` | find: files `<leader><leader>`, resume `ff`, grep `fg`, buffers `fb`, recent `fr`, diagnostics `fd`, TODOs `ft`, notifications `fn` |
 | `<leader>g` | git: lazygit `gg`, stage hunk `gs`, reset `gr`, preview `gp`, blame `gb`, draft commit msg (in gitcommit) `gm`, commit msg chat (in gitcommit) `gc`, configure commit AI (in gitcommit) `gM` |
+| `<leader>gw` | worktrees: switch workspace `gww`, create and switch `gwc`, delete inactive checkout `gwd` (also Neogit status `w`) |
 | `<leader>d` | debug: continue `dc`/`F5`, breakpoint `dd`/`B`, groups: breakpoints `db*`, step `ds*` (+`F9/F10/F11`), windows `dw*`, UI `du*` (toggle `duu`), REPL `dr*` (clear `drx`, highlighted), sessions `dS*`, launch `dl*`, eval `de/dE`, hover `dh`, virtual text toggle `dv` (persisted) |
 | `<leader>c` | code: format `cf`, diagnostics float `cd`, inlay hints `ci` (LSP: `gd`, `grr`, `grn`, `gra`, `K`) |
 | `<leader>b` | buffers: pin `bp`, close others `bo`, delete `bd`/`xw`, close all `xa` / others `xA` (keep pinned+unsaved; cycle: `Tab`/`S-Tab`, `S-h`/`S-l`) |
