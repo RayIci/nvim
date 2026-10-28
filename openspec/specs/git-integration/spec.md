@@ -24,15 +24,18 @@ The configuration SHALL open lazygit in a floating terminal window via a keymap 
 - **THEN** lazygit opens in a centered float in insert/terminal mode, and quitting lazygit closes the float
 
 ### Requirement: Commit-message plugin wiring
-The configuration SHALL install the `commitsmith` commit-message plugin and configure it, supplying its options and keymaps and providing the fallback callback that routes a commit-message prompt to Sidekick. The commit-message behaviour itself is specified by the `commit-message-ai` capability; this configuration owns only the wiring.
-
-The existing commit keymaps SHALL keep their meaning: `<leader>am` (and buffer-local `<leader>gm` in `gitcommit` buffers) generates a commit message, and `<leader>aM` (and buffer-local `<leader>gM`) opens harness and model selection. The conversation window SHALL be opened with `<leader>ac`, and with a buffer-local `<leader>gc` in `gitcommit` buffers that shadows the neogit commit popup, which is not meaningful inside a commit buffer.
-
-The Sidekick module SHALL NOT contain commit-message generation logic; it SHALL configure Sidekick only.
+The configuration SHALL install the `commitsmith` commit-message plugin and configure it, supplying its options and keymaps and providing the fallback callback that routes a commit-message prompt to Sidekick. The commit-message behaviour itself is specified by the `commit-message-ai` capability; this configuration owns only the wiring. The Sidekick module SHALL NOT contain commit-message generation logic; it SHALL configure Sidekick only.
 
 #### Scenario: Plugin wired with a Sidekick fallback
 - **WHEN** the user invokes the generate keymap outside a `gitcommit` buffer
 - **THEN** the configured fallback callback sends the commit-message prompt through Sidekick's CLI
+
+#### Scenario: Sidekick module scope
+- **WHEN** the Sidekick configuration module is loaded
+- **THEN** it configures Sidekick and its CLI keymaps only, with no commit-generation code
+
+### Requirement: Commit-message keymaps
+The existing commit keymaps SHALL keep their meaning: `<leader>am` (and buffer-local `<leader>gm` in `gitcommit` buffers) generates a commit message, and `<leader>aM` (and buffer-local `<leader>gM`) opens harness and model selection. The conversation window SHALL be opened with `<leader>ac`, and with a buffer-local `<leader>gc` in `gitcommit` buffers that shadows the neogit commit popup, which is not meaningful inside a commit buffer.
 
 #### Scenario: Generate keymaps preserved
 - **WHEN** the user presses `<leader>am`, or `<leader>gm` in a `gitcommit` buffer
@@ -45,10 +48,6 @@ The Sidekick module SHALL NOT contain commit-message generation logic; it SHALL 
 #### Scenario: Conversation window keymaps
 - **WHEN** the user presses `<leader>gc` in a `gitcommit` buffer
 - **THEN** the commit-message conversation window toggles rather than the neogit commit popup
-
-#### Scenario: Sidekick module scope
-- **WHEN** the Sidekick configuration module is loaded
-- **THEN** it configures Sidekick and its CLI keymaps only, with no commit-generation code
 
 ### Requirement: Diff and history UI via diffview.nvim
 The configuration SHALL provide side-by-side diff views and git history browsing via diffview.nvim under a `<leader>gd` which-key group: `<leader>gdd`/`<leader>gdo` open the diff view, `<leader>gdc` closes it, `<leader>gdr` refreshes, `<leader>gdt` toggles the file panel, `<leader>gdf` opens file history for the current file, and `<leader>gdp` opens project-wide file history.
@@ -73,19 +72,29 @@ The configuration SHALL provide a Magit-style git interface via neogit in a floa
 - **THEN** neogit opens directly on the push popup
 
 ### Requirement: GitHub PR and issue workflows via octo.nvim
-The configuration SHALL provide GitHub pull-request and issue management inside Neovim via octo.nvim with the telescope picker and `enable_builtin = true`. The plugin SHALL remain pinned to commit `7566ab21843bf0de721f72891733c0372738d3ee`, with a code comment recording that newer versions are bugged. Octo actions SHALL be mapped under a `<leader>gh` GitHub which-key tree mirroring the old config: issues under `<leader>ghi` (list/create/search/open-by-number/close/reopen/url), pull requests under `<leader>ghp` (list/create/search/open-by-number/close/merge/reload/url/ready/draft/checks), reviews under `<leader>ghr` (start/resume/commit/discard/submit/comments), comments under `<leader>ghc` (add/delete), reactions under `<leader>ghR`, assignees/labels under `<leader>gha`/`<leader>ghl`, reviewers under `<leader>ghv`, and `<leader>ghn`/`<leader>ghs`/`<leader>ghd` for notifications/search/discussions.
+The configuration SHALL provide GitHub pull-request and issue management inside Neovim via octo.nvim with the telescope picker and `enable_builtin = true`. The plugin SHALL remain pinned to commit `7566ab21843bf0de721f72891733c0372738d3ee`, with a code comment recording that newer versions are bugged.
 
 #### Scenario: List pull requests
 - **WHEN** the user presses `<leader>ghpl` (or runs `:Octo pr list`) in a repo with a GitHub remote and an authenticated `gh` CLI
 - **THEN** a telescope picker lists the repository's pull requests
 
+#### Scenario: Pin survives plugin updates
+- **WHEN** `vim.pack.update()` runs
+- **THEN** octo.nvim stays at the pinned commit
+
+### Requirement: Octo keymap tree
+Octo actions SHALL be mapped under a `<leader>gh` GitHub which-key tree mirroring the old config: issues under `<leader>ghi` (list/create/search/open-by-number/close/reopen/url), pull requests under `<leader>ghp` (list/create/search/open-by-number/close/merge/reload/url/ready/draft/checks), reviews under `<leader>ghr` (start/resume/commit/discard/submit/comments), and comments under `<leader>ghc` (add/delete).
+
 #### Scenario: Open an issue by number
 - **WHEN** the user presses `<leader>ghio` and enters an issue number at the prompt
 - **THEN** that issue opens in an Octo buffer
 
-#### Scenario: Pin survives plugin updates
-- **WHEN** `vim.pack.update()` runs
-- **THEN** octo.nvim stays at the pinned commit
+### Requirement: Octo reactions, people and discovery keymaps
+The `<leader>gh` tree SHALL also map reactions under `<leader>ghR`, assignees/labels under `<leader>gha`/`<leader>ghl`, reviewers under `<leader>ghv`, and `<leader>ghn`/`<leader>ghs`/`<leader>ghd` for notifications/search/discussions.
+
+#### Scenario: Open notifications
+- **WHEN** the user presses `<leader>ghn` in a repo with an authenticated `gh` CLI
+- **THEN** Octo's GitHub notifications list opens
 
 ### Requirement: Merge conflict resolution via git-conflict.nvim
 The configuration SHALL highlight merge conflict regions and provide resolution mappings under `<leader>gC`: `<leader>gCo` choose ours, `<leader>gCt` choose theirs, `<leader>gCb` choose both, `<leader>gC0` choose none, `<leader>gCn`/`<leader>gCp` jump to next/previous conflict, `<leader>gCQ` list conflicts in quickfix, and `<leader>gCq` list conflicts in Trouble.
@@ -97,3 +106,14 @@ The configuration SHALL highlight merge conflict regions and provide resolution 
 #### Scenario: Navigate conflicts
 - **WHEN** a buffer contains multiple conflicts
 - **THEN** `<leader>gCn` and `<leader>gCp` cycle the cursor through them
+
+### Requirement: Octo colours follow the active colorscheme
+On every colorscheme change, octo's colour palette SHALL be rebuilt from the active colorscheme's standard highlight groups (open/passing from `DiagnosticOk`, closed/failing from `DiagnosticError`, pending from `DiagnosticWarn`, merged from `Statement`, plus `DiagnosticInfo`, `Function`, `LineNr` and `Normal`), keeping octo's default for any colour whose source group lacks that attribute. The configuration SHALL NOT reference a specific colorscheme to do this.
+
+#### Scenario: Octo under a third-party theme
+- **WHEN** kanagawa-wave is active and an Octo PR buffer is open
+- **THEN** the "open" state uses kanagawa-wave's `DiagnosticOk` colour
+
+#### Scenario: Octo under vale
+- **WHEN** vale-night is active
+- **THEN** the "open" state uses vale-night's `DiagnosticOk` colour
