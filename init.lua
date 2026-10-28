@@ -1,6 +1,17 @@
 -- Entry point. Order matters:
 -- options -> plugins on rtp -> plugin setup -> language packs -> maps/autocmds -> workspace state.
 require("config.options")
+
+-- Embedded in VS Code (vscode-neovim): VS Code owns the UI, LSP and plugins, so
+-- only the keymap bridge is loaded. See lua/config/vscode.lua.
+if vim.g.vscode then
+  require("config.vscode")
+  return
+end
+
+-- Entry point. Order matters:
+-- options -> plugins on rtp -> plugin setup -> language packs -> maps/autocmds -> workspace state.
+require("config.options")
 require("config.pack")
 require("plugins")
 require("config.clipboard") -- after plugins so its startup notify renders via noice

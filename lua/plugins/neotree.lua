@@ -74,7 +74,11 @@ local function open_with_smart_picker(state)
   local eligible = 0
   for _, win in ipairs(vim.api.nvim_list_wins()) do
     local buf = vim.api.nvim_win_get_buf(win)
-    if vim.bo[buf].filetype ~= "neo-tree" and vim.bo[buf].buftype ~= "nofile" and vim.bo[buf].buftype ~= "terminal" then
+    if
+      vim.bo[buf].filetype ~= "neo-tree"
+      and vim.bo[buf].buftype ~= "nofile"
+      and vim.bo[buf].buftype ~= "terminal"
+    then
       eligible = eligible + 1
     end
   end
@@ -107,12 +111,29 @@ function M.setup()
         hide_dotfiles = false,
         hide_gitignored = false,
         hide_by_name = {
-          ".git", ".mypy_cache", ".pytest_cache", ".ruff_cache", ".github",
-          "bin", "obj", "bin\\Debug", "bin\\Release", "node_modules", ".next",
+          ".git",
+          ".mypy_cache",
+          ".pytest_cache",
+          ".ruff_cache",
+          ".github",
+          "bin",
+          "obj",
+          "bin\\Debug",
+          "bin\\Release",
+          "node_modules",
+          ".next",
         },
         hide_by_pattern = { ".*venv*", "*.egg-info" },
         never_show = { "__pycache__" },
+        -- conform's temporary copies (formatters without stdin, e.g. markdownlint)
+        -- would otherwise flash into the tree on every save.
+        never_show_by_pattern = { ".conform.*" },
       },
+      -- Review marks for files the agent changed (lua/plugins/agentdiff.lua).
+      components = {
+        agentdiff = require("plugins.agentdiff").neotree_component,
+      },
+      renderers = require("plugins.agentdiff").neotree_renderers(),
       use_libuv_file_watcher = true,
       commands = {
         create_dotnet_item = create_dotnet_item,

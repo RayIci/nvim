@@ -1,5 +1,5 @@
 ---nvim-lint: linting with per-language linters from language packs.
----Baseline runs: buffer open, save, and leaving insert mode. When the
+---Baseline runs: filetype set (buffer open), save, and leaving insert mode. When the
 ---diagnostics-live pref is on (<leader>ud), edits also lint debounced while
 ---typing — matching vim.diagnostic's update_in_insert display toggle.
 ---@class PluginLint
@@ -24,7 +24,10 @@ function M.apply(linters_by_ft)
     end
   end
 
-  vim.api.nvim_create_autocmd({ "BufReadPost", "BufWritePost", "InsertLeave" }, {
+  -- FileType, not BufReadPost: this group is created before Neovim's
+  -- filetypedetect, so on BufReadPost the filetype is still empty and no
+  -- linter matches. FileType also fires again when a buffer is reloaded.
+  vim.api.nvim_create_autocmd({ "FileType", "BufWritePost", "InsertLeave" }, {
     group = group,
     callback = function(ev)
       try_lint(ev.buf)
