@@ -105,6 +105,10 @@
       "rev": "d28a3f70721c79e3c5f6693057ae929f3d9c0a03",
       "src": "https://github.com/lukas-reineke/indent-blankline.nvim"
     },
+    "jason.nvim": {
+      "rev": "b61fa768f9566b8ccfe7862678a6bb43c89e825d",
+      "src": "https://github.com/RayIci/jason.nvim"
+    },
     "kanagawa.nvim": {
       "rev": "bb85e4bfc8d89b0e62c8fa53ccdd13d12e2f77b3",
       "src": "https://github.com/rebelot/kanagawa.nvim"
