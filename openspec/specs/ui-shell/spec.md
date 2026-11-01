@@ -1,7 +1,7 @@
 # ui-shell Specification
 
 ## Purpose
-TBD - created by syncing change setup-nvim-config. Update Purpose after archive.
+Defines the editor shell around the buffers: colorschemes and the theme picker, fuzzy finding, which-key, the neo-tree and oil file explorers, the bufferline and session restore, the cmdline and notification UI, terminals, winbar breadcrumbs, and the statusline.
 
 ## Requirements
 
@@ -12,8 +12,23 @@ The configuration SHALL install catppuccin, tokyonight, kanagawa, gruvbox, rose-
 - **WHEN** the user selects kanagawa in the themery picker and restarts Neovim
 - **THEN** kanagawa is the active colorscheme after restart
 
+### Requirement: Configuration colorschemes in the theme picker
+The picker SHALL also list, at the top, every colorscheme defined by a file in the configuration's own `colors/` directory (such as the generated `vale-night` and `vale-day`), discovered at startup so that newly generated themes appear without editing the picker configuration. On first launch, when no selection has been persisted, `vale-night` SHALL be the active colorscheme.
+
+#### Scenario: Vale in the picker
+- **WHEN** the user opens the themery picker
+- **THEN** `vale-night` and `vale-day` are listed among the configuration's own colorschemes at the top, and selecting one applies it with live preview
+
+#### Scenario: New theme appears without config edits
+- **WHEN** a new colorscheme file `colors/ocean-night.lua` is added to the configuration and Neovim restarts
+- **THEN** the themery picker lists `ocean-night` at the top, with no change to `lua/plugins/theme.lua`
+
+#### Scenario: First-launch default
+- **WHEN** Neovim starts with no persisted themery selection
+- **THEN** `vale-night` is the active colorscheme
+
 ### Requirement: Telescope fuzzy finding
-The configuration SHALL provide telescope.nvim with the fzf-native sorter, the old config's ignore patterns (build artifacts, VCS dirs, binary and lock files) for find-files and live-grep, hidden files included, and keymaps for: find files, live grep, buffers, help tags, recent files, and resume, under a `<leader>f` which-key group. `<leader><leader>` SHALL open the find-files picker and `<leader>ff` SHALL resume the last-used picker with its previous query and results. Result rows SHALL keep stable alignment while the selection moves: the selection caret and entry prefix MUST have equal display width, since telescope re-renders visited rows and a width mismatch accumulates a residual shift.
+The configuration SHALL provide telescope.nvim with the fzf-native sorter, the old config's ignore patterns (build artifacts, VCS dirs, binary and lock files) for find-files and live-grep, hidden files included, and keymaps for: find files, live grep, buffers, help tags, recent files, and resume, under a `<leader>f` which-key group. `<leader><leader>` SHALL open the find-files picker and `<leader>ff` SHALL resume the last-used picker with its previous query and results.
 
 #### Scenario: Live grep
 - **WHEN** the user presses the live-grep keymap and types a pattern
@@ -26,6 +41,9 @@ The configuration SHALL provide telescope.nvim with the fzf-native sorter, the o
 #### Scenario: Resume last picker
 - **WHEN** the user runs a live-grep search, closes it, and presses `<leader>ff`
 - **THEN** the live-grep picker reopens with the previous query and results
+
+### Requirement: Stable telescope row alignment
+Telescope result rows SHALL keep stable alignment while the selection moves: the selection caret and entry prefix MUST have equal display width, since telescope re-renders visited rows and a width mismatch accumulates a residual shift.
 
 #### Scenario: Stable rows while cycling
 - **WHEN** the user moves the selection down and up across many results
@@ -68,7 +86,7 @@ The configuration SHALL show open buffers in a bufferline.nvim top bar with diag
 - **THEN** the buffer shows a pin indicator and moves to the pinned section of the bufferline
 
 ### Requirement: Plugin-free session restore with pins
-The configuration SHALL provide automatic session management through auto-session: sessions are keyed per project (cwd), saved automatically on exit, and restored automatically when Neovim starts with no file arguments in a directory that has a saved session. `sessionoptions` SHALL include `buffers` and `globals` so open buffers, window layout, and `vim.g.BufferlinePinnedBuffers` persist in the session file, and a post-restore hook SHALL re-sync bufferline's pinned group from that global so previously pinned buffers show as pinned again. Session keymaps SHALL live under a `<leader>q` which-key group (save, restore, search picker, delete, toggle auto-save). Breakpoint restoration stays with the workspace module and SHALL still fire for session-restored buffers.
+The configuration SHALL provide automatic session management through auto-session: sessions are keyed per project (cwd), saved automatically on exit, and restored automatically when Neovim starts with no file arguments in a directory that has a saved session. Session keymaps SHALL live under a `<leader>q` which-key group (save, restore, search picker, delete, toggle auto-save). Breakpoint restoration stays with the workspace module and SHALL still fire for session-restored buffers.
 
 #### Scenario: Automatic session round-trip
 - **WHEN** the user has several buffers open (two pinned), quits Neovim, and reopens it in the same directory with no file arguments
@@ -98,6 +116,9 @@ The configuration SHALL provide automatic session management through auto-sessio
 - **WHEN** a session ends in which neo-tree was never opened
 - **THEN** the previously saved expanded-folders list is preserved, not wiped
 
+### Requirement: Session-persisted buffers and pins
+`sessionoptions` SHALL include `buffers` and `globals` so open buffers, window layout, and `vim.g.BufferlinePinnedBuffers` persist in the session file, and a post-restore hook SHALL re-sync bufferline's pinned group from that global so previously pinned buffers show as pinned again.
+
 #### Scenario: Buffers and pins survive :restart
 - **WHEN** the user opens new files, closes others, and changes pins, then the process ends without exit hooks (`:restart`, crash, kill)
 - **THEN** on the next start the restored session is reconciled against the change-time workspace snapshot: since-opened files are re-added, since-closed unmodified buffers are dropped, and the pin set matches the latest state
@@ -125,7 +146,7 @@ The configuration SHALL expose Neovim 0.12's built-in `:Undotree` via a keymap.
 - **THEN** the built-in undo tree view opens for the current buffer
 
 ### Requirement: Neo-tree smart file opening
-The neo-tree window SHALL be 45 columns wide, and pressing `w` or `<cr>` on a file SHALL open it via nvim-window-picker: with at most one eligible target window the file opens directly; with multiple eligible windows a picker prompts for the destination, excluding neo-tree, notification, terminal, and quickfix windows. Pressing `w` or `<cr>` on a directory SHALL toggle it. The old config's hide lists SHALL apply (by name: `.git`, cache dirs, `bin`/`obj`, `node_modules`, `.next`; by pattern: venvs and `*.egg-info`; never shown: `__pycache__`), and `Y` SHALL open the advanced-yank chooser copying the node's filename, stem, absolute path, cwd-relative path, home-relative path, or extension to the clipboard.
+The neo-tree window SHALL be 45 columns wide, and pressing `w` or `<cr>` on a file SHALL open it via nvim-window-picker: with at most one eligible target window the file opens directly; with multiple eligible windows a picker prompts for the destination, excluding neo-tree, notification, terminal, and quickfix windows. Pressing `w` or `<cr>` on a directory SHALL toggle it.
 
 #### Scenario: Open with single window
 - **WHEN** one editing window exists and the user presses `w` on a file in neo-tree
@@ -134,6 +155,9 @@ The neo-tree window SHALL be 45 columns wide, and pressing `w` or `<cr>` on a fi
 #### Scenario: Open with multiple windows
 - **WHEN** two editing windows exist and the user presses `w` on a file in neo-tree
 - **THEN** a window-picker overlay appears and the file opens in the chosen window
+
+### Requirement: Neo-tree hide lists and advanced yank
+The old config's neo-tree hide lists SHALL apply (by name: `.git`, cache dirs, `bin`/`obj`, `node_modules`, `.next`; by pattern: venvs and `*.egg-info`; never shown: `__pycache__`), and `Y` SHALL open the advanced-yank chooser copying the node's filename, stem, absolute path, cwd-relative path, home-relative path, or extension to the clipboard.
 
 #### Scenario: Advanced yank
 - **WHEN** the user presses `Y` on a file in neo-tree and picks "Path relative to CWD"
@@ -144,23 +168,11 @@ The neo-tree window SHALL be 45 columns wide, and pressing `w` or `<cr>` on a fi
 - **THEN** `__pycache__` never appears and `node_modules` is hidden by default
 
 ### Requirement: Oil floating explorer
-The configuration SHALL provide oil.nvim as a secondary file explorer that coexists with neo-tree. Pressing `<leader>E` SHALL open oil in a floating window, listing the directory of the current buffer's file, or the current working directory when the buffer has no file on disk. Oil MUST NOT take over directory buffers: opening a directory (`nvim .`, `:e <dir>`) SHALL keep its current behavior, and neo-tree SHALL keep `<leader>e`. Inside an oil buffer, `<BS>` in normal mode SHALL go to the parent directory, like `-`, while insert-mode `<BS>` keeps deleting characters. In an oil buffer, `g|` SHALL open the entry under the cursor in a vertical (side-by-side) split, `g-` in a horizontal (stacked) split, and `gR` SHALL refresh the listing. Oil MUST NOT shadow `<C-s>` (save) or `<C-h>`/`<C-l>` (tmux-navigator), so those global mappings keep working inside oil. Oil windows SHALL show no winbar breadcrumb, and oil buffers SHALL NOT appear in the bufferline or be restored by sessions.
+The configuration SHALL provide oil.nvim as a secondary file explorer that coexists with neo-tree. Pressing `<leader>E` SHALL open oil in a floating window, listing the directory of the current buffer's file, or the current working directory when the buffer has no file on disk. Oil MUST NOT take over directory buffers: opening a directory (`nvim .`, `:e <dir>`) SHALL keep its current behavior, and neo-tree SHALL keep `<leader>e`.
 
 #### Scenario: Float on the current file's directory
 - **WHEN** the user is editing `lua/plugins/oil.lua` and presses `<leader>E`
 - **THEN** a floating oil window opens listing the `lua/plugins/` directory
-
-#### Scenario: Backspace goes up a directory
-- **WHEN** the oil float lists `lua/plugins/` and the user presses `<BS>` in normal mode
-- **THEN** the float lists `lua/`
-
-#### Scenario: Split keys mirror tmux
-- **WHEN** the cursor is on a file in the oil float and the user presses `g|`
-- **THEN** the float closes and the file opens in a side-by-side split; with `g-` it opens in a stacked split
-
-#### Scenario: Global Ctrl maps work inside oil
-- **WHEN** focus is in an oil buffer and the user presses `<C-s>`, `<C-h>` or `<C-l>`
-- **THEN** the global save or tmux-navigator mapping runs, not an oil action
 
 #### Scenario: Fallback to cwd
 - **WHEN** the current buffer has no file on disk (an empty start buffer or a scratch buffer) and the user presses `<leader>E`
@@ -177,6 +189,24 @@ The configuration SHALL provide oil.nvim as a secondary file explorer that coexi
 #### Scenario: Neo-tree toggle unchanged
 - **WHEN** the user presses `<leader>e`
 - **THEN** neo-tree toggles as before, focused on the current file
+
+### Requirement: Oil buffer keymaps
+Inside an oil buffer, `<BS>` in normal mode SHALL go to the parent directory, like `-`, while insert-mode `<BS>` keeps deleting characters. `g|` SHALL open the entry under the cursor in a vertical (side-by-side) split, `g-` in a horizontal (stacked) split, and `gR` SHALL refresh the listing. Oil MUST NOT shadow `<C-s>` (save) or `<C-h>`/`<C-l>` (tmux-navigator), so those global mappings keep working inside oil.
+
+#### Scenario: Backspace goes up a directory
+- **WHEN** the oil float lists `lua/plugins/` and the user presses `<BS>` in normal mode
+- **THEN** the float lists `lua/`
+
+#### Scenario: Split keys mirror tmux
+- **WHEN** the cursor is on a file in the oil float and the user presses `g|`
+- **THEN** the float closes and the file opens in a side-by-side split; with `g-` it opens in a stacked split
+
+#### Scenario: Global Ctrl maps work inside oil
+- **WHEN** focus is in an oil buffer and the user presses `<C-s>`, `<C-h>` or `<C-l>`
+- **THEN** the global save or tmux-navigator mapping runs, not an oil action
+
+### Requirement: Oil buffers stay out of winbar, bufferline and sessions
+Oil windows SHALL show no winbar breadcrumb, and oil buffers SHALL NOT appear in the bufferline or be restored by sessions.
 
 #### Scenario: Oil leaves no trace in tabs or sessions
 - **WHEN** the user opens and closes the oil float, then quits and the session is restored
@@ -209,11 +239,21 @@ The statusline SHALL show a highlighted `REC @<register>` indicator while a macr
 - **THEN** the statusline shows `REC @q` for the whole recording and clears it when recording stops
 
 ### Requirement: Extensible toggleterm terminal
-The configuration SHALL provide terminals via toggleterm.nvim: `<C-t>` toggles (count-prefixed for numbered terminals, works in normal/insert/terminal modes), a `<leader>T` which-key group covers directions (horizontal/vertical/float), terminals 1-4, toggle-all, named creation, rename, and sending the current line or visual selection; terminal buffers get local keymaps (`<C-\>`/`jk` to normal mode, `<C-h/j/k/l>` window navigation). Interactive TUI terminals (lazygit) SHALL be excluded from the `jk` and `<C-h/j/k/l>` maps via a buffer flag — a pending `jk` map delays every `j` keystroke and fast `j`/`k` navigation would exit terminal mode — keeping only `<C-\>` as a deliberate escape. The terminal module SHALL expose a hook registry (`register_on_create`, `register_on_open`, `register_on_close`, `register_on_stdout`, `register_on_stderr`, `register_on_exit`) callable from any other module, with hooks registered at any time firing for subsequent terminal events.
+The configuration SHALL provide terminals via toggleterm.nvim: `<C-t>` toggles (count-prefixed for numbered terminals, works in normal/insert/terminal modes), and a `<leader>T` which-key group covers directions (horizontal/vertical/float), terminals 1-4, toggle-all, named creation, rename, and sending the current line or visual selection.
 
 #### Scenario: Toggle and escape
 - **WHEN** the user presses `<C-t>` and then `jk` inside the terminal
 - **THEN** a horizontal terminal opens in insert mode and `jk` returns to normal mode
+
+### Requirement: Terminal-local keymaps
+Terminal buffers SHALL get local keymaps (`<C-\>`/`jk` to normal mode, `<C-h/j/k/l>` window navigation). Interactive TUI terminals (lazygit) SHALL be excluded from the `jk` and `<C-h/j/k/l>` maps via a buffer flag — a pending `jk` map delays every `j` keystroke and fast `j`/`k` navigation would exit terminal mode — keeping only `<C-\>` as a deliberate escape.
+
+#### Scenario: TUI terminals keep j and k
+- **WHEN** lazygit is open in a terminal and the user presses `j` and `k` quickly
+- **THEN** lazygit receives both keys without delay and the terminal stays in terminal mode
+
+### Requirement: Terminal hook registry
+The terminal module SHALL expose a hook registry (`register_on_create`, `register_on_open`, `register_on_close`, `register_on_stdout`, `register_on_stderr`, `register_on_exit`) callable from any other module, with hooks registered at any time firing for subsequent terminal events.
 
 #### Scenario: External module registers a hook
 - **WHEN** another module calls `register_on_create` with a callback after the terminal module is set up, and a terminal is later created
@@ -261,7 +301,14 @@ The statusline SHALL show icon-distinguished, buffer-scoped indicators for the a
 - **THEN** the linter indicator renders nothing (no empty icon or label)
 
 ### Requirement: Registrable statusline widgets
-The statusline SHALL include a bridge component that renders statusline widgets registered by any code — language packs (via the framework's `statusline` field) or a plugin's own setup — through a public `register()` API on the statusline module, evaluated at render time so widgets from lazily-loaded plugins appear once available. Registration SHALL append (never replace), so registrants do not clobber one another regardless of order. A widget SHALL be shown only when its `cond` (if any) holds and its `render()` returns a non-empty string. The Python pack SHALL contribute a venv widget that shows `🐍 <venv-name>` for Python buffers and renders nothing when no virtualenv is active.
+The statusline SHALL include a bridge component that renders statusline widgets registered by any code — language packs (via the framework's `statusline` field) or a plugin's own setup — through a public `register()` API on the statusline module, evaluated at render time so widgets from lazily-loaded plugins appear once available. Registration SHALL append (never replace), so registrants do not clobber one another regardless of order.
+
+#### Scenario: A plugin registers its own widget
+- **WHEN** a plugin calls the statusline module's `register()` in its setup with a widget spec
+- **THEN** that widget renders in the statusline alongside pack-contributed widgets, without either clobbering the other
+
+### Requirement: Statusline widget visibility and venv widget
+A statusline widget SHALL be shown only when its `cond` (if any) holds and its `render()` returns a non-empty string. The Python pack SHALL contribute a venv widget that shows `🐍 <venv-name>` for Python buffers and renders nothing when no virtualenv is active.
 
 #### Scenario: Active venv shown for Python buffers
 - **WHEN** a virtualenv is selected (via venv-selector) and a Python buffer is focused
@@ -271,6 +318,20 @@ The statusline SHALL include a bridge component that renders statusline widgets 
 - **WHEN** no virtualenv is active, or the focused buffer is not Python
 - **THEN** the venv widget renders nothing
 
-#### Scenario: A plugin registers its own widget
-- **WHEN** a plugin calls the statusline module's `register()` in its setup with a widget spec
-- **THEN** that widget renders in the statusline alongside pack-contributed widgets, without either clobbering the other
+### Requirement: Theme-derived statusline labels and folder icons
+Configuration outside the colorscheme SHALL NOT reference any specific colorscheme. The statusline's macro-recording, LSP-client, formatter and linter labels SHALL take their foreground from the active colorscheme's `DiagnosticError`, `DiagnosticInfo`, `DiagnosticOk` and `Statement` groups respectively, falling back to `#ff5555`, `#7aa2f7`, `#9ece6a` and `#bb9af7` when that group has no foreground.
+
+#### Scenario: Labels follow the theme
+- **WHEN** the user switches from vale-night to kanagawa-wave without restarting
+- **THEN** the LSP-client label shows kanagawa-wave's `DiagnosticInfo` colour
+
+### Requirement: Theme-derived folder icons
+Neo-tree folder icons SHALL use the active colorscheme's `FolderIcon` group when it defines a foreground, and `#E5C07B` otherwise.
+
+#### Scenario: Folder colour for third-party themes
+- **WHEN** tokyonight-night is active
+- **THEN** neo-tree folder icons are `#E5C07B`
+
+#### Scenario: Folder colour from a theme that provides one
+- **WHEN** vale-day is active
+- **THEN** neo-tree folder icons use vale-day's `FolderIcon` colour

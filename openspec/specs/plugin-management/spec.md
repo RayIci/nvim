@@ -1,7 +1,7 @@
 # plugin-management Specification
 
 ## Purpose
-TBD - created by syncing change setup-nvim-config. Update Purpose after archive.
+Defines how plugins and external tools are installed: plugins through Neovim's native `vim.pack` with a committed lockfile, and language servers, formatters, linters and debug adapters through mason.
 
 ## Requirements
 
