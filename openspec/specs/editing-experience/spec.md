@@ -1,16 +1,19 @@
 # editing-experience Specification
 
 ## Purpose
-TBD - created by syncing change setup-nvim-config. Update Purpose after archive.
+Defines the in-buffer editing experience: treesitter highlighting, indentation and folding, completion and signature help, AI inline completion and the Sidekick CLI assistant, formatting and linting, multi-cursor editing, reference navigation, project-wide find and replace, and smaller quality-of-life plugins.
 
 ## Requirements
 
 ### Requirement: Treesitter syntax highlighting
-The configuration SHALL use nvim-treesitter (`main` branch) to install parsers declared by language packs and start treesitter highlighting for those filetypes, using the `main`-branch API (`require('nvim-treesitter').install()` + `vim.treesitter.start()`), not the deprecated `configs.setup` API. On top of pack-declared parsers, the configuration SHALL always install a common base set including at least: `vim`, `vimdoc`, `query`, `markdown`, `markdown_inline`, `regex`, `bash`, `diff`, `json`, `yaml`, `toml`, `xml`, `http`, `c`, `lua`, `luadoc`, `make`, `dockerfile`, `editorconfig`, the git parsers (`gitcommit`, `gitignore`, `git_rebase`, `git_config`, `gitattributes`), and `dap_repl`. The merged parser list SHALL be deduplicated.
+The configuration SHALL use nvim-treesitter (`main` branch) to install parsers declared by language packs and start treesitter highlighting for those filetypes, using the `main`-branch API (`require('nvim-treesitter').install()` + `vim.treesitter.start()`), not the deprecated `configs.setup` API.
 
 #### Scenario: Highlighting active
 - **WHEN** a file with an installed parser is opened
 - **THEN** treesitter highlighting is active for that buffer
+
+### Requirement: Base treesitter parser set
+On top of pack-declared parsers, the configuration SHALL always install a common base set including at least: `vim`, `vimdoc`, `query`, `markdown`, `markdown_inline`, `regex`, `bash`, `diff`, `json`, `yaml`, `toml`, `xml`, `http`, `c`, `lua`, `luadoc`, `make`, `dockerfile`, `editorconfig`, the git parsers (`gitcommit`, `gitignore`, `git_rebase`, `git_config`, `gitattributes`), and `dap_repl`. The merged parser list SHALL be deduplicated.
 
 #### Scenario: Git file highlighting without a git language pack
 - **WHEN** an interactive rebase todo or `.gitignore` file is opened
@@ -43,11 +46,7 @@ The configuration SHALL show function signature help (active parameter highlight
 - **THEN** exactly one floating signature window is visible
 
 ### Requirement: AI inline completion via copilot.lua
-The configuration SHALL provide Copilot ghost-text suggestions through zbirenbaum/copilot.lua (the old-config engine) backed by the mason-installed copilot-language-server binary, with the old-config keys: `<C-t>` accepts the current suggestion line, `<C-w>` accepts the next word, `<M-l>` accepts the whole suggestion, `<M-]>`/`<M-[>` cycle alternatives, and `<C-]>` dismisses. Accept keys SHALL act only on a visible suggestion (`trigger_on_accept = false`); `<C-w>` is a direct global map that is a harmless no-op without a suggestion (built-in insert delete-word is intentionally not preserved), while `<C-t>` passes through to its built-in behavior. Ghost text SHALL NOT linger after leaving insert mode, regardless of whether insert mode is exited with `<Esc>` or `<C-c>`.
-
-#### Scenario: No-op without suggestion
-- **WHEN** no ghost suggestion is visible and the user presses `<C-w>` in insert mode
-- **THEN** nothing happens (no deletion, no mode change)
+The configuration SHALL provide Copilot ghost-text suggestions through zbirenbaum/copilot.lua (the old-config engine) backed by the mason-installed copilot-language-server binary, with the old-config keys: `<C-t>` accepts the current suggestion line, `<C-w>` accepts the next word, `<M-l>` accepts the whole suggestion, `<M-]>`/`<M-[>` cycle alternatives, and `<C-]>` dismisses.
 
 #### Scenario: Accept word then line
 - **WHEN** a multi-line ghost suggestion is visible and the user presses `<C-w>` then `<C-t>`
@@ -60,6 +59,13 @@ The configuration SHALL provide Copilot ghost-text suggestions through zbirenbau
 #### Scenario: Dismiss
 - **WHEN** a ghost-text suggestion is visible and the user presses `<C-]>`
 - **THEN** the suggestion disappears without inserting text
+
+### Requirement: Copilot accept keys and ghost-text cleanup
+Copilot accept keys SHALL act only on a visible suggestion (`trigger_on_accept = false`); `<C-w>` is a direct global map that is a harmless no-op without a suggestion (built-in insert delete-word is intentionally not preserved), while `<C-t>` passes through to its built-in behavior. Ghost text SHALL NOT linger after leaving insert mode, whether insert mode is exited with `<Esc>` or `<C-c>`.
+
+#### Scenario: No-op without suggestion
+- **WHEN** no ghost suggestion is visible and the user presses `<C-w>` in insert mode
+- **THEN** nothing happens (no deletion, no mode change)
 
 #### Scenario: No lingering ghost text on Ctrl-C
 - **WHEN** a suggestion is visible and the user exits insert mode with `<C-c>`
@@ -172,11 +178,14 @@ The configuration SHALL provide smart code folding backed by LSP folding ranges 
 - **THEN** folds are opened or closed without lowering the high default fold level needed for provider-managed folds
 
 ### Requirement: Multi-cursor editing
-The configuration SHALL provide multi-cursor editing via `jake-stewart/multicursor.nvim`: `<C-n>` (normal and visual) selects the word under the cursor and adds the next matching occurrence per press, `<C-p>` adds the previous match, `q` skips the current match and jumps to the next, `<C-Up>`/`<C-Down>` add a cursor on the line above/below, `<C-Left>`/`<C-Right>` rotate the main cursor, `<leader>ma` adds cursors to all matches, visual-mode `<leader>m` helpers split/match/insert/append across the selection, `<leader>mx` deletes the current cursor, and `<Esc>` clears all cursors (or re-enables them when disabled). The `q` and `<Esc>` bindings live in a buffer-local keymap layer active only while cursors exist, so they take precedence over global mappings (e.g. `<Esc>` → nohlsearch) during a session and revert afterwards. All regions are highlighted and edits are reflected on every cursor in real time.
+The configuration SHALL provide multi-cursor editing via `jake-stewart/multicursor.nvim`: `<C-n>` (normal and visual) selects the word under the cursor and adds the next matching occurrence per press, `<C-p>` adds the previous match, `q` skips the current match and jumps to the next, `<leader>ma` adds cursors to all matches, and `<leader>mx` deletes the current cursor. All regions SHALL be highlighted and edits reflected on every cursor in real time.
 
 #### Scenario: Add and skip occurrences
 - **WHEN** the user presses `<C-n>` three times on a word and `q` once
 - **THEN** three occurrences are selected (the skipped one excluded) and typing a change applies to all selected occurrences live
+
+### Requirement: Multi-cursor line, rotation and session keys
+`<C-Up>`/`<C-Down>` SHALL add a cursor on the line above/below, `<C-Left>`/`<C-Right>` rotate the main cursor, visual-mode `<leader>m` helpers split/match/insert/append across the selection, and `<Esc>` clears all cursors (or re-enables them when disabled). The `q` and `<Esc>` bindings live in a buffer-local keymap layer active only while cursors exist, so they take precedence over global mappings (e.g. `<Esc>` → nohlsearch) during a session and revert afterwards.
 
 #### Scenario: Line cursors and clear
 - **WHEN** the user presses `<C-Down>` twice to add cursors below and then `<Esc>`
@@ -206,3 +215,65 @@ blink.cmp's documentation and signature buffers SHALL render formatted markdown 
 #### Scenario: Rendering survives candidate cycling
 - **WHEN** the user cycles across several completion candidates with markdown documentation
 - **THEN** each candidate's documentation window remains rendered, not plain escaped markdown
+
+### Requirement: Agent change review wiring
+The configuration SHALL install the `agentdiff` plugin and configure it, supplying its options, keymaps, tool claims and statusline widget. The review behaviour itself is specified by the `agent-change-review` capability in the plugin's repository (RayIci/agentdiff.nvim); this configuration owns only the wiring, and no other module SHALL contain agent change review logic.
+
+#### Scenario: Review active after startup
+- **WHEN** Neovim starts in a project and an agent in another tmux pane edits a file
+- **THEN** the edit is shown as a pending change using the configured keymaps and colours
+
+### Requirement: Agent change review keymaps
+`]a`/`[a` SHALL move to the next/previous pending change across files and `]A`/`[A` to the next/previous changed file. A `<leader>r` "review" which-key group SHALL provide `rk`/`ru` keep/undo the change under the cursor (in visual mode: the selected lines), `rK`/`rU` keep/undo the file, `ra`/`rA` keep/undo all, `rr` toggle the panel, `rv` toggle side-by-side, `rh` hide/show the overlay and `rc` resolve a conflicted file.
+
+#### Scenario: Step and keep
+- **WHEN** two files have pending changes and the user presses `]a` repeatedly, pressing `<leader>rk` on each change
+- **THEN** the cursor visits every change across both files and nothing is pending at the end
+
+#### Scenario: Keep a selection
+- **WHEN** the user selects two lines of a pending change in visual mode and presses `<leader>rk`
+- **THEN** only those lines are kept
+
+#### Scenario: Leader popup
+- **WHEN** the user presses `<leader>`
+- **THEN** which-key lists a "review" group under `r`
+
+### Requirement: Agent review toggle keymap
+`<leader>uR` SHALL toggle agent change review on and off, persisted across restarts, and SHALL be listed in the ui/toggles which-key group.
+
+#### Scenario: Toggle review
+- **WHEN** the user presses `<leader>uR` and restarts Neovim
+- **THEN** review is off after the restart, and pressing `<leader>uR` again turns it back on
+
+### Requirement: Tool writes claimed as the user's
+File operations performed from Neovim by tools that write to disk directly — oil.nvim actions and grug-far replacements — SHALL be claimed as the user's, so they never appear as pending agent changes.
+
+#### Scenario: Oil rename
+- **WHEN** the user renames a file in oil and saves the oil buffer
+- **THEN** neither the old nor the new path is shown as a pending change
+
+#### Scenario: Project-wide replace
+- **WHEN** the user runs a grug-far replacement across several files
+- **THEN** none of the replaced files is shown as a pending change
+
+### Requirement: Pending changes marked in neo-tree
+The neo-tree file tree SHALL mark every file with pending agent changes, and every collapsed directory that contains one, with a review icon (`󰚩`) next to neo-tree's own git and diagnostic marks, in the `AgentdiffTreeFile` / `AgentdiffTreeDir` colours. The marks SHALL update when pending changes change, without the user refreshing the tree.
+
+#### Scenario: Agent edits a file
+- **WHEN** neo-tree shows `src/` collapsed and an agent edits `src/main.lua`
+- **THEN** `src/` shows the review icon, and expanding it shows the icon on `main.lua`
+
+#### Scenario: Marks clear after review
+- **WHEN** the user keeps or undoes every change of `src/main.lua`
+- **THEN** the icon disappears from `main.lua` and from `src/`
+
+### Requirement: Pending changes in the statusline
+The statusline SHALL show the agentdiff summary of pending changes through the statusline widget registry, with its own icon, and SHALL show nothing when no change is pending.
+
+#### Scenario: Summary visible
+- **WHEN** an agent has changed three files with seven changes
+- **THEN** the statusline shows the pending summary for 3 files and 7 changes
+
+#### Scenario: Hidden when empty
+- **WHEN** every pending change has been kept or undone
+- **THEN** the agentdiff widget disappears from the statusline

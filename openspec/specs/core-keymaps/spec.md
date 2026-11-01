@@ -1,7 +1,7 @@
 # core-keymaps Specification
 
 ## Purpose
-TBD - created by syncing change keymaps-and-ui-fixes. Update Purpose after archive.
+Defines the configuration's core keymaps that are not owned by a plugin subsystem: saving, search-highlight clearing, insert-mode escapes, buffer cycling and layout-preserving closing, tmux-aware window navigation, and tab management.
 
 ## Requirements
 
@@ -92,7 +92,7 @@ Typing `jk` or `jj` in insert mode SHALL return to normal mode via better-escape
 - **THEN** the keys reach the terminal program unchanged
 
 ### Requirement: Tab management under leader-j
-The configuration SHALL provide tab-management keymaps under a `<leader>j` which-key group: `<leader>j<Tab>`/`<leader>j<S-Tab>` next/previous tab, `<leader>jf`/`<leader>jl` first/last tab, `<leader>jc` create tab, `<leader>js` open the current buffer in a new tab, `<leader>jx` close tab (also `<leader>xj` in the close group), `<leader>jX` close all other tabs, `<leader>jm`/`<leader>jM` move tab right/left, `<leader>j0`/`<leader>j$` move tab to first/last position, and `<leader>j1`–`<leader>j9` jump to tab N. The built-in `gt`/`gT` (including count support) SHALL remain unmapped.
+The configuration SHALL provide tab-management keymaps under a `<leader>j` which-key group: `<leader>j<Tab>`/`<leader>j<S-Tab>` next/previous tab, `<leader>jf`/`<leader>jl` first/last tab, `<leader>jc` create tab, `<leader>js` open the current buffer in a new tab, `<leader>jx` close tab (also `<leader>xj` in the close group), and `<leader>jX` close all other tabs. The built-in `gt`/`gT` (including count support) SHALL remain unmapped.
 
 #### Scenario: Create and close tabs
 - **WHEN** the user presses `<leader>jc` and then `<leader>jx`
@@ -101,6 +101,9 @@ The configuration SHALL provide tab-management keymaps under a `<leader>j` which
 #### Scenario: Current buffer into a new tab
 - **WHEN** the user presses `<leader>js` while editing a file
 - **THEN** a new tab opens showing that same buffer
+
+### Requirement: Tab moving and direct jumps
+The `<leader>j` group SHALL also provide `<leader>jm`/`<leader>jM` to move the tab right/left, `<leader>j0`/`<leader>j$` to move it to the first/last position, and `<leader>j1`–`<leader>j9` to jump to tab N.
 
 #### Scenario: Direct tab jump
 - **WHEN** three tabs exist and the user presses `<leader>j2`

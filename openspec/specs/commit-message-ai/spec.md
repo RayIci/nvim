@@ -20,10 +20,6 @@ The commit-message generation logic SHALL live in a self-contained `commitsmith`
 ### Requirement: Harness selection and persistence
 The plugin SHALL support the `codex`, `claude`, and `copilot` harnesses for headless commit-message generation. It SHALL provide a selection flow that discovers which harnesses are installed, presents them for selection with their availability shown, and then presents the model choices for the selected harness. The selected harness and its model SHALL be persisted in storage owned by the plugin, global to the user rather than scoped to a project or session.
 
-Persisted settings SHALL be read from storage on each access rather than from an in-process cache, so that a setting changed in one Neovim instance is observed by any other instance on its next read.
-
-The built-in model list for each harness SHALL be overridable through `setup()`, and the model picker SHALL offer a free-text entry for a model that is not in the list.
-
 #### Scenario: Choose a harness
 - **WHEN** the user invokes the harness subcommand
 - **THEN** the plugin presents `codex`, `claude`, and `copilot`, each marked installed or missing
@@ -38,20 +34,22 @@ The built-in model list for each harness SHALL be overridable through `setup()`,
 - **WHEN** the user restarts Neovim after selecting a harness and model
 - **THEN** the next generation uses the persisted harness and model without reselection
 
+### Requirement: Settings read from storage on each access
+Persisted settings SHALL be read from storage on each access rather than from an in-process cache, so that a setting changed in one Neovim instance is observed by any other instance on its next read.
+
 #### Scenario: Settings shared across instances
 - **WHEN** the user changes the harness in one Neovim instance
 - **THEN** another already-running Neovim instance uses the new harness on its next generation
+
+### Requirement: Overridable model lists
+The built-in model list for each harness SHALL be overridable through `setup()`, and the model picker SHALL offer a free-text entry for a model that is not in the list.
 
 #### Scenario: Custom model entry
 - **WHEN** the user picks the custom entry in the model picker and types a model identifier
 - **THEN** that identifier is persisted and passed to the harness on subsequent generations
 
 ### Requirement: Headless commit-message generation
-The plugin SHALL generate commit messages from a `gitcommit` buffer by reading the staged diff, invoking the persisted harness non-interactively with the diff supplied inline, and replacing the commit buffer's message lines above the first comment line with the result. The generated message SHALL follow Conventional Commits: a single `type(scope): summary` title line of at most 72 characters, then a body wrapped at 72 characters that begins with a short introductory sentence, followed by a `- ` bullet list of concrete changes, with an optional closing rationale paragraph. The harness SHALL be instructed to return only the raw commit message, and the plugin SHALL strip code fences and surrounding quotes from the response.
-
-Generation SHALL be triggered only by explicit user action; opening a commit buffer SHALL NOT start generation.
-
-When the commit buffer already contains a message, such as during `git commit --amend`, that message SHALL be supplied to the harness as the current draft to revise.
+The plugin SHALL generate commit messages from a `gitcommit` buffer by reading the staged diff, invoking the persisted harness non-interactively with the diff supplied inline, and replacing the commit buffer's message lines above the first comment line with the result. Generation SHALL be triggered only by explicit user action; opening a commit buffer SHALL NOT start generation.
 
 #### Scenario: Generate from a commit buffer
 - **WHEN** the user invokes the generate action in a `gitcommit` buffer with staged changes
@@ -63,14 +61,20 @@ When the commit buffer already contains a message, such as during `git commit --
 - **WHEN** the user runs `git commit` with staged changes and the commit buffer opens empty
 - **THEN** no message is generated or inserted automatically
 
+#### Scenario: No staged changes
+- **WHEN** the user invokes the generate action with nothing staged
+- **THEN** the plugin reports that there are no staged changes and does not invoke the harness
+
+### Requirement: Existing message as the draft
+When the commit buffer already contains a message, such as during `git commit --amend`, that message SHALL be supplied to the harness as the current draft to revise.
+
 #### Scenario: Amend supplies the existing message
 - **WHEN** the user runs `git commit --amend` and then invokes the generate action
 - **THEN** no generation ran automatically when the buffer opened
 - **AND** the existing message is included in the request as the draft to revise
 
-#### Scenario: No staged changes
-- **WHEN** the user invokes the generate action with nothing staged
-- **THEN** the plugin reports that there are no staged changes and does not invoke the harness
+### Requirement: Conventional Commits message format
+The generated message SHALL follow Conventional Commits: a single `type(scope): summary` title line of at most 72 characters, then a body wrapped at 72 characters that begins with a short introductory sentence, followed by a `- ` bullet list of concrete changes, with an optional closing rationale paragraph. The harness SHALL be instructed to return only the raw commit message, and the plugin SHALL strip code fences and surrounding quotes from the response.
 
 #### Scenario: Response cleanup
 - **WHEN** the harness returns a message wrapped in code fences or quotes
@@ -78,10 +82,6 @@ When the commit buffer already contains a message, such as during `git commit --
 
 ### Requirement: Interactive refinement conversation
 The plugin SHALL maintain a conversation for each commit buffer, comprising the request sent, every harness reply, and every user refinement. The user SHALL be able to refine the current message by sending further instructions, and each completed revision SHALL replace the commit message in the commit buffer. Whether revisions are applied automatically or require explicit acceptance SHALL be configurable, defaulting to automatic application on every revision.
-
-The conversation SHALL be scoped to its commit buffer: it SHALL survive closing the conversation window and SHALL be discarded when the commit buffer is wiped, so a newly opened commit buffer starts a fresh conversation. The user SHALL be able to clear the conversation and start over without closing the buffer or the window.
-
-The first turn SHALL send the full context and, where the harness supports pinning or reporting a session identifier, record it. Later turns SHALL resume that session when possible and SHALL otherwise resend the full context together with the current message and the refinement. A turn that resends full context because resume was unavailable SHALL be marked as such in the conversation.
 
 #### Scenario: Refine the message
 - **WHEN** the user sends a refinement instruction for a generated message
@@ -91,6 +91,9 @@ The first turn SHALL send the full context and, where the harness supports pinni
 #### Scenario: Explicit acceptance mode
 - **WHEN** automatic application is disabled in configuration and a revision completes
 - **THEN** the commit buffer is left unchanged until the user accepts the revision
+
+### Requirement: Conversation scoped to its commit buffer
+The conversation SHALL be scoped to its commit buffer: it SHALL survive closing the conversation window and SHALL be discarded when the commit buffer is wiped, so a newly opened commit buffer starts a fresh conversation. The user SHALL be able to clear the conversation and start over without closing the buffer or the window.
 
 #### Scenario: Conversation outlives the window
 - **WHEN** the user closes the conversation window and reopens it for the same commit buffer
@@ -104,6 +107,9 @@ The first turn SHALL send the full context and, where the harness supports pinni
 - **WHEN** the user invokes the clear action
 - **THEN** the conversation is emptied, any recorded session identifier is dropped, and the next generation starts fresh
 
+### Requirement: Harness session resume
+The first turn SHALL send the full context and, where the harness supports pinning or reporting a session identifier, record it. Later turns SHALL resume that session when possible and SHALL otherwise resend the full context together with the current message and the refinement. A turn that resends full context because resume was unavailable SHALL be marked as such in the conversation.
+
 #### Scenario: Resume unavailable
 - **WHEN** a refinement cannot resume the harness session
 - **THEN** the plugin resends the full context with the current message and the refinement instead of failing
@@ -111,12 +117,6 @@ The first turn SHALL send the full context and, where the harness supports pinni
 
 ### Requirement: Conversation window
 The plugin SHALL provide a window, opened and closed independently of generation, that displays the conversation for the current commit buffer and offers a free-form input for refinements. The window SHALL attach to whatever state exists when it opens, including a generation already in progress and a message already applied to the buffer. Opening the window when no generation has run SHALL start one.
-
-The staged diff SHALL be shown collapsed as a summary within the request entry, expandable on demand.
-
-The window SHALL offer canned refinement actions alongside the free-form input, including at minimum shortening, adding detail, correcting the type or scope, and regenerating from scratch.
-
-The window's placement SHALL default to a right-hand vertical split and SHALL be configurable to other placements.
 
 #### Scenario: Open the window mid-generation
 - **WHEN** the user triggers generation and then opens the conversation window before it completes
@@ -130,6 +130,9 @@ The window's placement SHALL default to a right-hand vertical split and SHALL be
 - **WHEN** the user opens the conversation window in a commit buffer where no generation has run
 - **THEN** a generation is started
 
+### Requirement: Conversation window contents and placement
+The staged diff SHALL be shown collapsed as a summary within the request entry, expandable on demand. The window SHALL offer canned refinement actions alongside the free-form input, including at minimum shortening, adding detail, correcting the type or scope, and regenerating from scratch. The window's placement SHALL default to a right-hand vertical split and SHALL be configurable to other placements.
+
 #### Scenario: Collapsed diff
 - **WHEN** a request entry containing the staged diff is displayed
 - **THEN** the diff is summarized rather than printed in full
@@ -138,6 +141,10 @@ The window's placement SHALL default to a right-hand vertical split and SHALL be
 #### Scenario: Canned refinement
 - **WHEN** the user triggers a canned refinement from the window
 - **THEN** that instruction is sent as a refinement turn without the user typing it
+
+#### Scenario: Default placement
+- **WHEN** the user opens the conversation window without a placement configured
+- **THEN** it opens as a right-hand vertical split
 
 ### Requirement: Streaming and batch output
 The plugin SHALL support a streaming output mode, in which harness output is rendered progressively in the conversation window, and a batch mode, in which the reply appears once complete. The mode SHALL be configurable and SHALL default to streaming.
@@ -194,6 +201,11 @@ The plugin SHALL refuse to start a second generation for a commit buffer while o
 ### Requirement: Command surface and buffer scoping
 The plugin SHALL expose a single user command with subcommands for selecting the harness, selecting the model, generating, toggling the conversation window, stopping, clearing, and toggling lean mode, with completion for the subcommand names.
 
+#### Scenario: Subcommand completion
+- **WHEN** the user requests completion for the command
+- **THEN** the available subcommand names are offered
+
+### Requirement: Subcommand buffer requirements
 Subcommands that change global settings SHALL work in any buffer. Subcommands that act on a conversation SHALL require a `gitcommit` buffer and SHALL report a clear error elsewhere. The generate subcommand SHALL be the exception: outside a `gitcommit` buffer it SHALL delegate to the configured fallback.
 
 #### Scenario: Settings subcommands anywhere
@@ -204,28 +216,25 @@ Subcommands that change global settings SHALL work in any buffer. Subcommands th
 - **WHEN** the user invokes the chat, stop, or clear subcommand outside a `gitcommit` buffer
 - **THEN** the plugin reports that the action requires a commit buffer and does nothing else
 
-#### Scenario: Subcommand completion
-- **WHEN** the user requests completion for the command
-- **THEN** the available subcommand names are offered
-
 ### Requirement: Fallback outside commit buffers
-The plugin SHALL accept a fallback callback through its configuration and SHALL invoke it with a commit-message prompt when generation is requested outside a `gitcommit` buffer. That prompt SHALL carry the same Conventional Commits rules as the headless prompt but SHALL instruct the agent to obtain the staged diff itself rather than embedding it. The plugin SHALL NOT itself know about or depend on whatever the callback routes to.
-
-The Conventional Commits rules SHALL be defined once and shared between the headless and fallback prompts.
+The plugin SHALL accept a fallback callback through its configuration and SHALL invoke it with a commit-message prompt when generation is requested outside a `gitcommit` buffer. That prompt SHALL instruct the agent to obtain the staged diff itself rather than embedding it. The plugin SHALL NOT itself know about or depend on whatever the callback routes to.
 
 #### Scenario: Generate outside a commit buffer
 - **WHEN** the user invokes the generate action outside a `gitcommit` buffer
 - **THEN** the plugin calls the configured fallback callback with the fallback prompt
 - **AND** no harness process is started by the plugin
 
+#### Scenario: No fallback configured
+- **WHEN** generation is requested outside a `gitcommit` buffer and no fallback callback was configured
+- **THEN** the plugin reports that the action requires a commit buffer
+
+### Requirement: Shared Conventional Commits rules
+The fallback prompt SHALL carry the same Conventional Commits rules as the headless prompt, and those rules SHALL be defined once and shared between the two prompts.
+
 #### Scenario: Fallback prompt fetches its own diff
 - **WHEN** the fallback prompt is rendered
 - **THEN** it instructs the agent to inspect the staged changes itself
 - **AND** it carries the same title, body, bullet-list and raw-output rules as the headless prompt
-
-#### Scenario: No fallback configured
-- **WHEN** generation is requested outside a `gitcommit` buffer and no fallback callback was configured
-- **THEN** the plugin reports that the action requires a commit buffer
 
 ### Requirement: Missing harness is an error
 When the persisted harness is not installed, the plugin SHALL fail the generation with an error naming the harness and pointing at the harness-selection subcommand. It SHALL NOT silently substitute another harness and SHALL NOT silently route to the fallback.
