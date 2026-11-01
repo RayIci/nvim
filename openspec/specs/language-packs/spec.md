@@ -6,7 +6,7 @@ Concrete per-language packs built on the lang-pack-framework: which LSP servers,
 ## Requirements
 
 ### Requirement: Shell and config-file language packs
-The configuration SHALL provide language packs for bash (bashls + shfmt), docker (dockerls + docker_compose_language_service), json (jsonls with schemastore.nvim schemas, prettier format, jsonlint lint), yaml (yamlls, prettier format, yamllint lint), toml (tombi LSP + tombi format), xml (lemminx + csharpier format), gradle (gradle_ls), and make (mbake format), each installing its mason tools and treesitter parsers. The json pack SHALL request only treesitter parsers that exist on nvim-treesitter's `main` branch (`json`, `json5`), and SHALL register the `json` parser for the `jsonc` filetype so jsonc files highlight without emitting an "unsupported language" warning at startup.
+The configuration SHALL provide language packs for bash (bashls + shfmt), docker (dockerls + docker_compose_language_service), json (jsonls with schemastore.nvim schemas, prettier format, jsonlint lint), yaml (yamlls, prettier format, yamllint lint), toml (tombi LSP + tombi format), xml (lemminx + csharpier format), gradle (gradle_ls), and make (mbake format), each installing its mason tools and treesitter parsers.
 
 #### Scenario: JSON with schema
 - **WHEN** a `package.json` file is opened
@@ -15,6 +15,9 @@ The configuration SHALL provide language packs for bash (bashls + shfmt), docker
 #### Scenario: Shell script
 - **WHEN** a `.sh` file is opened and saved
 - **THEN** bashls is attached and shfmt formats the buffer
+
+### Requirement: JSON pack treesitter parsers
+The json pack SHALL request only treesitter parsers that exist on nvim-treesitter's `main` branch (`json`, `json5`), and SHALL register the `json` parser for the `jsonc` filetype so jsonc files highlight without emitting an "unsupported language" warning at startup.
 
 #### Scenario: JSONC highlights without warning
 - **WHEN** Neovim starts and installs treesitter parsers for the json pack
@@ -51,14 +54,29 @@ The configuration SHALL provide a markdown pack with marksman LSP, markdownlint 
 - **THEN** emoji candidates appear from the emoji source
 
 ### Requirement: LaTeX language pack
-The configuration SHALL provide a latex pack with texlab LSP, tex-fmt formatting, the latex treesitter parser, vimtex (quickfix mode off; WSL uses a SumatraPDF forward-search viewer, non-WSL uses zathura), and wrapping.nvim for soft-wrap editing.
+The configuration SHALL provide a latex pack with texlab LSP, tex-fmt formatting, the latex and bibtex treesitter parsers, vimtex (quickfix mode off; WSL uses a SumatraPDF forward-search viewer, non-WSL uses zathura), and wrapping.nvim for soft-wrap editing.
 
 #### Scenario: LaTeX editing
 - **WHEN** a `.tex` file is opened
 - **THEN** texlab attaches and vimtex commands (e.g. `:VimtexCompile`) are available
 
+### Requirement: LaTeX treesitter scope
+The latex parser SHALL be installed (for LaTeX injected into other languages, e.g. markdown math) but SHALL NOT start treesitter highlighting in `tex` buffers, because vimtex's math text objects, math-zone detection and concealment depend on its own syntax highlighting. The bibtex parser SHALL highlight `bib` buffers.
+
+#### Scenario: vimtex keeps syntax highlighting
+- **WHEN** a `.tex` file is opened
+- **THEN** treesitter highlighting is not active in the buffer and vimtex's syntax highlighting is
+
+#### Scenario: BibTeX highlighting
+- **WHEN** a `.bib` file is opened
+- **THEN** treesitter highlighting via the bibtex parser is active
+
 ### Requirement: SQL language pack
-The configuration SHALL provide a sql pack with sql_formatter formatting, vim-dadbod + vim-dadbod-ui + vim-dadbod-completion, a `<leader>D` database keymap group (toggle UI, add connection, find buffer), buffer-local mappings in dbui/dbout/sql buffers replicating the old config's Plug mappings (open, delete, execute query, save query, jump to foreign key, toggle layout), and a dadbod completion source for sql/mysql/plsql filetypes.
+The configuration SHALL provide a sql pack with the `sql` treesitter parser, vim-dadbod + vim-dadbod-ui + vim-dadbod-completion, a `<leader>D` database keymap group (toggle UI, add connection, find buffer), buffer-local mappings in dbui/dbout/sql buffers replicating the old config's Plug mappings (open, delete, execute query, save query, jump to foreign key, toggle layout), and a dadbod completion source for sql/mysql/plsql filetypes.
+
+#### Scenario: SQL syntax highlighting
+- **WHEN** a `.sql` file is opened
+- **THEN** treesitter highlights it using the `sql` parser
 
 #### Scenario: Database UI
 - **WHEN** the user presses `<leader>DD`
@@ -68,6 +86,24 @@ The configuration SHALL provide a sql pack with sql_formatter formatting, vim-da
 - **WHEN** the user edits a SQL buffer connected to a database
 - **THEN** the completion menu offers dadbod-sourced table/column candidates
 
+### Requirement: SQL linting and formatting with sqlfluff
+The sql pack SHALL use sqlfluff for both linting (nvim-lint) and formatting (conform). sqlfluff SHALL resolve its dialect from a dedicated project config (`.sqlfluff` or `.sqlfluff.cfg`) found by searching upward from the buffer, and SHALL NOT force a dialect when one is present.
+
+#### Scenario: Dialect-aware linting from project config
+- **WHEN** a SQL buffer is linted or formatted in a project that has a `.sqlfluff` declaring `dialect = postgres`
+- **THEN** sqlfluff runs as PostgreSQL and Neovim does not pass `--dialect` (the project config wins via `--stdin-filename`/cwd discovery)
+
+### Requirement: sqlfluff without a project config
+When no dedicated sqlfluff config exists, linting SHALL fall back to the permissive `ansi` dialect, so unconfigured buffers lint without a "no dialect" error. Formatting SHALL run only when a dedicated config is present (no fallback), since `sqlfluff fix` under a generic dialect could rewrite dialect-specific SQL incorrectly.
+
+#### Scenario: Fallback dialect for linting without project config
+- **WHEN** a SQL buffer is linted in a project with no `.sqlfluff`
+- **THEN** sqlfluff lints with the `ansi` fallback dialect rather than failing with "no dialect"
+
+#### Scenario: Formatting skipped without project config
+- **WHEN** a SQL buffer is formatted in a project with no `.sqlfluff`
+- **THEN** sqlfluff formatting does not run (no generic-dialect rewrite of dialect-specific SQL)
+
 ### Requirement: HTTP client language pack
 The configuration SHALL provide an http pack with the http treesitter parser, kulala-fmt formatting, and kulala.nvim with request keymaps available in http/rest buffers: send request (`<leader>hr`), send all (`<leader>ha`), view stats (`<leader>hv`), copy as cURL (`<leader>hc`), select environment (`<leader>he`), and jump previous/next (`<leader>hp`/`<leader>hn`).
 
@@ -76,15 +112,18 @@ The configuration SHALL provide an http pack with the http treesitter parser, ku
 - **THEN** kulala executes the request and shows the response in a split
 
 ### Requirement: Java language pack
-The configuration SHALL provide a java pack with jdtls (java-debug-adapter bundles wired into `init_options`), google-java-format formatting, checkstyle linting, the nvim-jdtls plugin, DAP configurations (launch current file, launch with main-class prompt, attach to remote JVM), a neotest-java adapter, and a `:Java` user command with subcommands build, clean, test, run, runArguments, organize, extractVariable, extractMethod, extractConstant, doc, and reloadProject — build subcommands detect maven/gradle(w) and run through Overseer.
-
-#### Scenario: Java project build
-- **WHEN** the user runs `:Java build` in a project containing `pom.xml`
-- **THEN** `mvn build` runs as an Overseer task with the task list opened
+The configuration SHALL provide a java pack with jdtls (java-debug-adapter bundles wired into `init_options`), google-java-format formatting, checkstyle linting, the nvim-jdtls plugin, DAP configurations (launch current file, launch with main-class prompt, attach to remote JVM), and a neotest-java adapter.
 
 #### Scenario: jdtls attach
 - **WHEN** a `.java` file is opened
 - **THEN** jdtls attaches with the debug bundles loaded, enabling DAP launch configurations
+
+### Requirement: Java user command
+The java pack SHALL provide a `:Java` user command with subcommands build, clean, test, run, runArguments, organize, extractVariable, extractMethod, extractConstant, doc, and reloadProject. Build subcommands SHALL detect maven/gradle(w) and run through Overseer.
+
+#### Scenario: Java project build
+- **WHEN** the user runs `:Java build` in a project containing `pom.xml`
+- **THEN** `mvn build` runs as an Overseer task with the task list opened
 
 ### Requirement: Kotlin language pack
 The configuration SHALL provide a kotlin pack with kotlin_language_server (run under a SDKMAN-provided Java 21 when found, with a warning naming the `sdk install` command when not), ktlint formatting and linting, the kotlin treesitter parser, kotlin-debug-adapter DAP (launch main class, attach remote JVM), a neotest-java adapter, and a `:Kotlin` user command (build, clean, test, run, runArguments) running detected gradle(w)/maven through Overseer.
@@ -94,20 +133,26 @@ The configuration SHALL provide a kotlin pack with kotlin_language_server (run u
 - **THEN** kotlin_language_server starts with `JAVA_HOME` pointing at the Java 21 installation
 
 ### Requirement: Dotnet language pack
-The configuration SHALL provide a dotnet pack with the roslyn LSP via roslyn.nvim, easy-dotnet.nvim (its builtin LSP disabled), csharpier formatting invoked with `--stdin-path $FILENAME`, the c_sharp treesitter parser, netcoredbg DAP adapters (`coreclr` and `netcoredbg`) with launch/attach/launch-with-args configurations that locate the project dll via csproj + highest `net*` bin folder, a neotest-dotnet adapter, an easy-dotnet completion source, `SolutionSelect` and `SolutionAutoSelect` user commands, automatic upward solution selection on `.cs` BufEnter (toggleable), and a `<leader>-s` solution keymap group. The pack SHALL declare its roslyn language server to mason under the package name `roslyn-language-server` so mason-tool-installer can resolve and install it.
+The configuration SHALL provide a dotnet pack with the roslyn LSP via roslyn.nvim, easy-dotnet.nvim (its builtin LSP disabled), csharpier formatting invoked with `--stdin-path $FILENAME`, the c_sharp treesitter parser, and an easy-dotnet completion source. The pack SHALL declare its roslyn language server to mason under the package name `roslyn-language-server` so mason-tool-installer can resolve and install it.
 
 #### Scenario: Roslyn tool installs cleanly
 - **WHEN** Neovim starts and mason-tool-installer processes the dotnet pack's tools
 - **THEN** no `Cannot find package "roslyn"` error is raised
 - **AND** the `roslyn-language-server` mason package is queued for installation
 
-#### Scenario: Solution auto-select
-- **WHEN** a `.cs` file inside a solution is opened with auto-select enabled
-- **THEN** the nearest solution file found searching upward is selected via easy-dotnet
+### Requirement: Dotnet debugging and tests
+The dotnet pack SHALL provide netcoredbg DAP adapters (`coreclr` and `netcoredbg`) with launch, attach and launch-with-args configurations that locate the project dll via the csproj and the highest `net*` bin folder, and a neotest-dotnet adapter.
 
 #### Scenario: Debug a console app
 - **WHEN** the user starts the "Launch - netcoredbg" DAP configuration in a built project
 - **THEN** the debugger launches the project's dll resolved from `bin/Debug/net*/`
+
+### Requirement: Dotnet solution selection
+The dotnet pack SHALL provide `SolutionSelect` and `SolutionAutoSelect` user commands, automatic upward solution selection on `.cs` BufEnter (toggleable), and a `<leader>-s` solution keymap group.
+
+#### Scenario: Solution auto-select
+- **WHEN** a `.cs` file inside a solution is opened with auto-select enabled
+- **THEN** the nearest solution file found searching upward is selected via easy-dotnet
 
 ### Requirement: Enriched python pack
 The python pack SHALL keep basedpyright and ruff as LSP servers and additionally provide: mypy linting alongside ruff; ruff formatting extended with `ruff_organize_imports` and `ruff_fix`; venv-selector.nvim with a `<leader>-pp` picker whose selected environment activates in new terminals (falling back to the `./.venv`/`./venv` convention when nothing is selected); pymple.nvim for import management; vim-python-pep8-indent; and a neotest-python adapter using pytest.
@@ -121,19 +166,7 @@ The python pack SHALL keep basedpyright and ruff as LSP servers and additionally
 - **THEN** both mypy and ruff diagnostics appear
 
 ### Requirement: Jupyter notebook language pack
-The configuration SHALL provide a jupyter pack that syncs percent-format `*.ju.*` files with a JupyterLab notebook through neopyter, in direct mode with Neovim listening on `127.0.0.1:9001`. Each `*.ju.py` file SHALL map to the `.ipynb` of the same base name, created automatically if missing. Buffers attached to neopyter SHALL get buffer-local keymaps under a `<leader>-j` "Jupyter" which-key group:
-
-- run cell (`<leader>-jr`)
-- run cell and select next (`<leader>-jn`)
-- run all above (`<leader>-ja`)
-- run all (`<leader>-jA`)
-- restart kernel (`<leader>-jk`)
-- restart kernel and run all (`<leader>-jK`)
-- connect (`<leader>-jc`)
-- status (`<leader>-js`)
-- sync buffer to notebook (`<leader>-jy`)
-
-In notebook buffers only (`*.ju.*` files, and an `.ipynb` left open as raw JSON), whether or not neopyter is connected, `<leader>-jt` SHALL open a floating cheat sheet of JupyterLab DataFrame tools (Buckaroo, D-Tale), `<leader>-jh` SHALL open a floating cheat sheet of every supported cell syntax (code, titled code, markdown in string and comment form, raw, line and cell magics) with the run keymaps, and `<leader>-jS` SHALL show a notification with one-line uv and pip commands to set up a project for notebooks and to start JupyterLab. Python buffers SHALL offer kernel-backed completion candidates from neopyter alongside the default sources. `*.ju.*` buffers SHALL be formatted (on save and manually) with code formatting and import sorting only, never with lint autofixes, so that side-effect imports such as `import buckaroo` are never removed. Files that don't match `*.ju.*` SHALL behave exactly as they do under the python pack.
+The configuration SHALL provide a jupyter pack that syncs percent-format `*.ju.*` files with a JupyterLab notebook through neopyter, in direct mode with Neovim listening on `127.0.0.1:9001`. Each `*.ju.py` file SHALL map to the `.ipynb` of the same base name, created automatically if missing. Files that don't match `*.ju.*` SHALL behave exactly as they do under the python pack.
 
 #### Scenario: Live sync to JupyterLab
 - **WHEN** JupyterLab is running with the neopyter extension in direct mode on `127.0.0.1:9001` and the user opens `smoke.ju.py`
@@ -147,6 +180,19 @@ In notebook buffers only (`*.ju.*` files, and an `.ipynb` left open as raw JSON)
 - **WHEN** cells in a `*.ju.py` are separated by blank lines before the next `# %%`
 - **THEN** the notebook's cells contain the cell text without leading or trailing blank lines, and indentation inside the cell is preserved
 
+### Requirement: Jupyter cell and kernel keymaps
+Buffers attached to neopyter SHALL get buffer-local keymaps under a `<leader>-j` "Jupyter" which-key group:
+
+- run cell (`<leader>-jr`)
+- run cell and select next (`<leader>-jn`)
+- run all above (`<leader>-ja`)
+- run all (`<leader>-jA`)
+- restart kernel (`<leader>-jk`)
+- restart kernel and run all (`<leader>-jK`)
+- connect (`<leader>-jc`)
+- status (`<leader>-js`)
+- sync buffer to notebook (`<leader>-jy`)
+
 #### Scenario: Run cell from Neovim
 - **WHEN** the cursor is inside a `# %%` cell of an attached buffer and the user presses `<leader>-jr`
 - **THEN** that cell executes in the JupyterLab kernel and its output appears in the browser
@@ -154,6 +200,13 @@ In notebook buffers only (`*.ju.*` files, and an `.ipynb` left open as raw JSON)
 #### Scenario: Restart kernel
 - **WHEN** the user presses `<leader>-jk` in an attached buffer
 - **THEN** the notebook's kernel restarts and previously defined names are no longer available
+
+### Requirement: Notebook cheat sheets and setup hint
+Only in notebook buffers (`*.ju.*` files, or an `.ipynb` left open as raw JSON), connected to neopyter or not:
+
+- `<leader>-jt` SHALL open a floating cheat sheet of JupyterLab DataFrame tools (Buckaroo, D-Tale);
+- `<leader>-jh` SHALL open a floating cheat sheet of every supported cell syntax with the run keymaps;
+- `<leader>-jS` SHALL notify one-line uv and pip commands for notebook project setup and starting JupyterLab.
 
 #### Scenario: Project setup commands
 - **WHEN** the user presses `<leader>-jS` in a `*.ju.py` buffer
@@ -165,15 +218,21 @@ In notebook buffers only (`*.ju.*` files, and an `.ipynb` left open as raw JSON)
 
 #### Scenario: Cell syntax sheet
 - **WHEN** the user presses `<leader>-jh` in a `*.ju.py` buffer
-- **THEN** a read-only floating window titled "Notebook cells" shows each cell syntax with an example, every example syncs to the intended notebook cell type, and `q` or `<Esc>` closes it
+- **THEN** a read-only floating window titled "Notebook cells" shows each cell syntax (code, titled code, markdown in string and comment form, raw, line and cell magics) with an example, every example syncs to the intended notebook cell type, and `q` or `<Esc>` closes it
 
 #### Scenario: Keymaps scoped to notebooks
 - **WHEN** the user opens a plain `.py` file that does not match `*.ju.*`
 - **THEN** no `<leader>-j` mappings exist in that buffer, including `<leader>-jS` and `<leader>-jt`
 
+### Requirement: Jupyter kernel completion
+Python buffers SHALL offer kernel-backed completion candidates from neopyter alongside the default sources.
+
 #### Scenario: Kernel completion
 - **WHEN** the user types `%ti` in an attached buffer with an active connection
 - **THEN** the completion menu offers magic candidates such as `%timeit` from the Neopyter source
+
+### Requirement: Notebook formatting without lint autofixes
+`*.ju.*` buffers SHALL be formatted (on save and manually) with code formatting and import sorting only, never with lint autofixes, so that side-effect imports such as `import buckaroo` are never removed.
 
 #### Scenario: Notebook formatted on save without lint fixes
 - **WHEN** a `*.ju.py` buffer with an over-long line, unsorted imports, an unused side-effect `import buckaroo` and a `# %timeit` magic is saved
@@ -189,8 +248,6 @@ The jupyter pack SHALL treat a `*.ju.py` file as the source of truth for the `.i
 - line magics as `# %magic`;
 - cell magics as `# %%` followed by `# %%<magic>`;
 - no header before the first cell.
-
-The pack SHALL NOT let neopyter replace notebook cells that the `.ju.py` doesn't contain without asking the user first. When jupytext is unavailable, opening an `.ipynb` SHALL show its raw JSON and report the error.
 
 #### Scenario: Open an existing notebook
 - **WHEN** the user opens `analysis.ipynb` and no `analysis.ju.py` exists
@@ -212,6 +269,13 @@ The pack SHALL NOT let neopyter replace notebook cells that the `.ju.py` doesn't
 - **WHEN** the user creates `scratch.ju.py` and no notebook with cells exists for it
 - **THEN** the buffer starts with one empty `# %%` cell and is attached to neopyter
 
+#### Scenario: Magics round-trip
+- **WHEN** a notebook with a `%timeit` cell and a `%%bash` cell is imported and synced to JupyterLab
+- **THEN** the notebook's cells contain `%timeit ...` and `%%bash` + body exactly as they did before the import
+
+### Requirement: Notebook overwrite protection
+The jupyter pack SHALL NOT let neopyter replace notebook cells that the `.ju.py` doesn't contain without asking the user first. When jupytext is unavailable, opening an `.ipynb` SHALL show its raw JSON and report the error.
+
 #### Scenario: Notebook changed elsewhere
 - **WHEN** `analysis.ipynb` was modified after `analysis.ju.py` and contains cell source the `.ju.py` lacks, and the user opens `analysis.ju.py`
 - **THEN** the user is asked to either import the notebook (overwriting the `.ju.py`) or keep the `.ju.py` (letting neopyter overwrite the notebook), before neopyter syncs
@@ -220,6 +284,6 @@ The pack SHALL NOT let neopyter replace notebook cells that the `.ju.py` doesn't
 - **WHEN** `analysis.ipynb` is newer than `analysis.ju.py` but its cell sources match, for example because only outputs changed
 - **THEN** `analysis.ju.py` opens without a prompt
 
-#### Scenario: Magics round-trip
-- **WHEN** a notebook with a `%timeit` cell and a `%%bash` cell is imported and synced to JupyterLab
-- **THEN** the notebook's cells contain `%timeit ...` and `%%bash` + body exactly as they did before the import
+#### Scenario: jupytext unavailable
+- **WHEN** jupytext is not installed and the user opens `analysis.ipynb`
+- **THEN** the notebook's raw JSON is shown and an error explaining that jupytext is missing is reported

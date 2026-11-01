@@ -12,7 +12,7 @@
 ---  shell      neotree bufferline navic which_key noice snacks trouble
 ---             todo_comments indent rainbow toggleterm ufo render_markdown mason
 ---  code       blink lspsaga lightbulb dap neotest overseer multicursor
----             copilot sidekick
+---             copilot sidekick agentdiff
 ---  lang packs dadbod easy_dotnet kulala
 ---
 ---Each module: function(r: ValeRoles, c: resolved palette) → { Group = spec }.
@@ -53,6 +53,7 @@ local modules = {
   "dadbod",
   "easy_dotnet",
   "kulala",
+  "agentdiff",
 }
 
 ---@param r ValeRoles

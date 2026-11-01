@@ -59,9 +59,9 @@
 
 ## 9. Tune vale in the studio (interactive with the user)
 
-- [ ] 9.1 vale-night: foundation, syntax, signals, UI and ANSI tuned in the studio (including the open choices: one vs two keyword colours, coloured vs plain variables, bracket colours); saved
-- [ ] 9.2 vale-day: tuned the same way starting from night's hue decisions, with contrast checked against the light background; saved
+- [x] 9.1 vale-night: foundation, syntax, signals, UI and ANSI tuned in the studio (including the open choices: one vs two keyword colours, coloured vs plain variables, bracket colours); saved
+- [x] 9.2 vale-day: tuned the same way starting from night's hue decisions, with contrast checked against the light background; saved
 
 ## 10. Final validation
 
-- [ ] 10.1 Run `openspec validate add-vale-colorscheme --strict`; walk through every scenario in the four spec deltas; run the plugin-override check on every theme; confirm no new startup errors
+- [x] 10.1 Run `openspec validate add-vale-colorscheme --strict`; walk through every scenario in the four spec deltas; run the plugin-override check on every theme; confirm no new startup errors
