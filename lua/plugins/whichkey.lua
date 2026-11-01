@@ -28,6 +28,7 @@ function M.setup()
     { "<leader>ghv", group = "reviewers" },
     { "<leader>j", group = "tabs" },
     { "<leader>k", group = "trouble" },
+    { "<leader>r", group = "review" },
     { "<leader>l", group = "lsp" },
     { "<leader>lc", group = "codelens" },
     { "<leader>ld", group = "diagnostics" },

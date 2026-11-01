@@ -1,0 +1,15 @@
+local H = require("helpers")
+
+describe("smoke", function()
+  it("loads the plugin and runs setup without output", function()
+    local agentdiff = require("agentdiff")
+    agentdiff.setup({ auto_start = false })
+    ok(type(agentdiff.setup) == "function")
+  end)
+
+  it("gives every test its own project and state directory", function()
+    ok(vim.uv.fs_stat(H.project), "project dir exists")
+    eq(H.state, vim.env.XDG_STATE_HOME)
+    eq(H.project, vim.uv.cwd())
+  end)
+end)

@@ -23,6 +23,7 @@ require("plugins.toggleterm").setup()
 require("plugins.copilot").setup()
 require("plugins.sidekick").setup()
 require("plugins.commitsmith").setup()
+require("plugins.agentdiff").setup()
 
 -- Git
 require("plugins.gitsigns").setup()
