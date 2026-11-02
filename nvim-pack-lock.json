@@ -4,6 +4,10 @@
       "rev": "f0c2a23ab79dc295f5e0eef0d8b587a39020c852",
       "src": "https://github.com/CopilotC-Nvim/CopilotChat.nvim"
     },
+    "agentdiff.nvim": {
+      "rev": "0b7dce6bf8a529a8a3345cab507830e4b3240464",
+      "src": "https://github.com/RayIci/agentdiff.nvim"
+    },
     "auto-session": {
       "rev": "6cde3874a9283c2db55627acca5f28e4fa402320",
       "src": "https://github.com/rmagatti/auto-session"
