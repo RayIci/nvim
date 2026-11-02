@@ -79,6 +79,13 @@
 - [x] 12.3 Add `path_status(path)` and the `AgentdiffTreeFile`/`AgentdiffTreeDir` highlights to the plugin, with a vale mapping; verify tests for "File and its parents" and "Nothing pending", and document both in the README
 - [x] 12.4 Add the neo-tree `agentdiff` component (copied default renderers with the component next to `git_status`) and refresh neo-tree on `User AgentdiffChanged`; verify in the real config in tmux that "Agent edits a file" and "Marks clear after review" hold
 
+## 13. Extraction to its own repository
+
+- [x] 13.1 Copy `lua/agentdiff/` and the tests to `~/Github/agentdiff.nvim` (`lua/agentdiff/`, `tests/`), fixing the runner's and specs' repository paths; verify the full suite passes from the new location and loads the new copy
+- [x] 13.2 Load the plugin from the repository in `lua/plugins/agentdiff.lua` (runtimepath, `$AGENTDIFF_DIR`, help tags) and remove the copies from the configuration; verify the real config starts with review ready and the keymaps mapped
+- [x] 13.3 Write `doc/agentdiff.txt` and `docs/` (architecture, attribution, detection, merge3, review UI, testing, decisions) with Mermaid diagrams; verify `:help agentdiff` opens with no duplicate tags and every Mermaid block parses
+- [x] 13.4 Add `.gitignore`, `Makefile` (`test`, `fmt`, `fmt-check`, `helptags`), `.luarc.json` and `.stylua.toml`; verify `make test` and `make fmt-check` pass
+
 ## 10. End-to-end verification
 
 - [ ] 10.1 With Claude Code in a tmux pane next to Neovim, have it edit, create and delete files; verify every change is pending, navigable with `]a`, and resolvable with keep/undo, and that the user's own edits in between never show
@@ -89,4 +96,4 @@
 ## Workflow follow-up
 
 - Archive the change after the end-to-end checks pass, syncing the `agent-change-review`, `editing-experience` and `vale-engine` specs.
-- Extract `lua/agentdiff/` and `tests/agentdiff/` into their own repository and replace the in-config copy with a `vim.pack` entry (a separate change).
+- Publish `~/Github/agentdiff.nvim` and replace the runtimepath line in `lua/plugins/agentdiff.lua` with a `vim.pack` entry.

@@ -1,10 +1,28 @@
 ---agentdiff: VS Code agent-mode review of changes AI agents make from another
----tmux pane. The plugin lives in lua/agentdiff/ for now and is written to be
----moved to its own repository later; this module is the only place that knows
----about both the plugin and the rest of this configuration (keymaps, which-key,
----statusline, and the tools whose writes must count as the user's).
+---tmux pane. The plugin lives in its own repository (~/Github/agentdiff.nvim,
+---or $AGENTDIFF_DIR) and is loaded from there; this module is the only place
+---that knows about both the plugin and the rest of this configuration (keymaps,
+---which-key, statusline, neo-tree, and the tools whose writes must count as the
+---user's).
 ---@class PluginAgentdiff
 local M = {}
+
+---Where the plugin's repository lives.
+M.dir = vim.env.AGENTDIFF_DIR or vim.fn.expand("~/Github/agentdiff.nvim")
+
+---Put the plugin on the runtimepath (and build its help tags once).
+---@return boolean ok
+local function load()
+  if not vim.uv.fs_stat(M.dir .. "/lua/agentdiff/init.lua") then
+    vim.notify("agentdiff: plugin not found at " .. M.dir, vim.log.levels.WARN)
+    return false
+  end
+  vim.opt.rtp:prepend(M.dir)
+  if not vim.uv.fs_stat(M.dir .. "/doc/tags") and vim.uv.fs_stat(M.dir .. "/doc") then
+    pcall(vim.cmd.helptags, vim.fn.fnameescape(M.dir .. "/doc"))
+  end
+  return true
+end
 
 ---Paths touched by a list of oil actions (oil:// URLs of the files adapter).
 ---@param actions table[]?
@@ -74,6 +92,9 @@ function M.neotree_renderers()
 end
 
 function M.setup()
+  if not load() then
+    return
+  end
   local agentdiff = require("agentdiff")
   agentdiff.setup({
     keymaps = {

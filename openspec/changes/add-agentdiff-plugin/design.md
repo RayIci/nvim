@@ -166,6 +166,8 @@ lua/agentdiff/
 
 Additive: no existing behaviour changes. Rollback means removing `require("plugins.agentdiff").setup()` from `lua/plugins/init.lua`. The store directory under `stdpath("state")/agentdiff` can be deleted at any time and is rebuilt from the current disk state. Extraction to its own repository later means moving `lua/agentdiff/` and `tests/agentdiff/` and adding the repo to `vim.pack`, with no code changes (spec: self-contained plugin).
 
+**Extraction (done in this change).** The plugin and its tests now live in their own repository, `~/Github/agentdiff.nvim` (`lua/agentdiff/`, `tests/`, `doc/agentdiff.txt`, `docs/`). The configuration keeps only the host wiring: `lua/plugins/agentdiff.lua` prepends that directory to the runtimepath (overridable with `$AGENTDIFF_DIR`, with a warning when it's missing) and builds its help tags once; `lua/vale/integrations/agentdiff.lua`, the which-key group, and the neo-tree, oil and grug-far wiring stay in the config. Once the repository is published, the runtimepath line becomes a `vim.pack` entry.
+
 ## Open Questions
 
 - Exact default exclude list and default size limit for "oversized" files (start with 1 MiB).
