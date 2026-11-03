@@ -82,7 +82,7 @@
 ## 13. Extraction to its own repository
 
 - [x] 13.1 Copy `lua/agentdiff/` and the tests to `~/Github/agentdiff.nvim` (`lua/agentdiff/`, `tests/`), fixing the runner's and specs' repository paths; verify the full suite passes from the new location and loads the new copy
-- [x] 13.2 Load the plugin from the repository in `lua/plugins/agentdiff.lua` (runtimepath, `$AGENTDIFF_DIR`, help tags) and remove the copies from the configuration; verify the real config starts with review ready and the keymaps mapped
+- [x] 13.2 Publish the repository as `RayIci/agentdiff.nvim`, install it with `vim.pack` (`lua/config/pack.lua`, `nvim-pack-lock.json`) and remove the copies from the configuration; verify the real config starts with review ready and the keymaps mapped
 - [x] 13.3 Write `doc/agentdiff.txt` and `docs/` (architecture, attribution, detection, merge3, review UI, testing, decisions) with Mermaid diagrams; verify `:help agentdiff` opens with no duplicate tags and every Mermaid block parses
 - [x] 13.4 Add `.gitignore`, `Makefile` (`test`, `fmt`, `fmt-check`, `helptags`), `.luarc.json` and `.stylua.toml`; verify `make test` and `make fmt-check` pass
 
@@ -95,5 +95,4 @@
 
 ## Workflow follow-up
 
-- Archive the change after the end-to-end checks pass, syncing the `agent-change-review`, `editing-experience` and `vale-engine` specs.
-- Publish `~/Github/agentdiff.nvim` and replace the runtimepath line in `lua/plugins/agentdiff.lua` with a `vim.pack` entry.
+- Archive the change after the end-to-end checks pass. The specs (`agent-change-review`, `editing-experience`, `ui-shell`, `vale-engine`) are already synced; sync again only if a check leads to spec changes.
