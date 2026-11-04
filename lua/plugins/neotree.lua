@@ -91,6 +91,8 @@ local function open_with_smart_picker(state)
 end
 
 function M.setup()
+  local agentdiff_tree = require("plugins.agentdiff").integration("neotree")
+
   require("window-picker").setup({
     filter_rules = {
       include_current_win = false,
@@ -129,11 +131,10 @@ function M.setup()
         -- would otherwise flash into the tree on every save.
         never_show_by_pattern = { ".conform.*" },
       },
-      -- Review marks for files the agent changed (lua/plugins/agentdiff.lua).
-      components = {
-        agentdiff = require("plugins.agentdiff").neotree_component,
-      },
-      renderers = require("plugins.agentdiff").neotree_renderers(),
+      -- Review marks for files the agent changed (agentdiff's neo-tree
+      -- integration; neo-tree's own defaults when it isn't available).
+      components = agentdiff_tree and { agentdiff = agentdiff_tree.component } or nil,
+      renderers = agentdiff_tree and agentdiff_tree.renderers() or nil,
       use_libuv_file_watcher = true,
       commands = {
         create_dotnet_item = create_dotnet_item,

@@ -3,7 +3,7 @@
 ## ADDED Requirements
 
 ### Requirement: Agent change review wiring
-The configuration SHALL install the `agentdiff` plugin and configure it, supplying its options, keymaps, tool claims and statusline widget. The review behaviour itself is specified by the `agent-change-review` capability; this configuration owns only the wiring, and no other module SHALL contain agent change review logic.
+The configuration SHALL install the `agentdiff` plugin and configure it, supplying its options, keymaps, tool claims and statusline widget. The review behaviour itself is specified by the `agent-change-review` capability in the plugin's repository (RayIci/agentdiff.nvim); this configuration owns only the wiring, and no other module SHALL contain agent change review logic.
 
 #### Scenario: Review active after startup
 - **WHEN** Neovim starts in a project and an agent in another tmux pane edits a file
