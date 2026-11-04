@@ -1,124 +1,86 @@
 ---agentdiff: VS Code agent-mode review of changes AI agents make from another
----tmux pane. The plugin lives in its own repository (~/Github/agentdiff.nvim,
----or $AGENTDIFF_DIR) and is loaded from there; this module is the only place
+---tmux pane. The plugin is installed by vim.pack; this module is the only place
 ---that knows about both the plugin and the rest of this configuration (keymaps,
----which-key, statusline, neo-tree, and the tools whose writes must count as the
----user's).
+---which-key, statusline, and the plugin's neo-tree, oil and grug-far
+---integration modules).
 ---@class PluginAgentdiff
 local M = {}
 
----Where the plugin's repository lives.
-M.dir = vim.env.AGENTDIFF_DIR or vim.fn.expand("~/Github/agentdiff.nvim")
-
----Put the plugin on the runtimepath (and build its help tags once).
----@return boolean ok
-local function load()
-  if not vim.uv.fs_stat(M.dir .. "/lua/agentdiff/init.lua") then
-    vim.notify("agentdiff: plugin not found at " .. M.dir, vim.log.levels.WARN)
-    return false
-  end
-  vim.opt.rtp:prepend(M.dir)
-  if not vim.uv.fs_stat(M.dir .. "/doc/tags") and vim.uv.fs_stat(M.dir .. "/doc") then
-    pcall(vim.cmd.helptags, vim.fn.fnameescape(M.dir .. "/doc"))
-  end
-  return true
+---One of agentdiff's integration modules, or nil when the installed version
+---doesn't have it yet (that integration is then simply skipped).
+---@param name "neotree"|"oil"|"grug_far"
+---@return table?
+function M.integration(name)
+  local ok, mod = pcall(require, "agentdiff.integrations." .. name)
+  return ok and mod or nil
 end
 
----Paths touched by a list of oil actions (oil:// URLs of the files adapter).
----@param actions table[]?
----@return string[]
-local function oil_paths(actions)
-  local paths = {}
-  for _, a in ipairs(actions or {}) do
-    -- (not ipairs over the three fields: a move has no `url`, and ipairs
-    -- would stop at that nil)
-    for _, key in ipairs({ "url", "src_url", "dest_url" }) do
-      local url = a[key]
-      local p = type(url) == "string" and url:match("^oil://(.*)$")
-      if p then
-        paths[#paths + 1] = p
-      end
-    end
-  end
-  return paths
-end
-
----grug-far hook: claim each file right before grug-far rewrites it, so
----project-wide replaces never show as agent changes.
+---grug-far hook: claim each file right before grug-far rewrites it.
 ---@param on_finish fun(status?: string, err?: string)
 ---@param file { path: string }
 function M.grug_far_before_edit(on_finish, file)
-  pcall(function()
-    require("agentdiff").claim({ vim.fn.fnamemodify(file.path, ":p") })
-  end)
+  local gf = M.integration("grug_far")
+  if gf then
+    return gf.on_before_edit_file(on_finish, file)
+  end
   on_finish("success")
 end
 
----neo-tree component: the review icon on files with pending agent changes
----and on collapsed directories that contain one.
----@param node table neo-tree node
----@return table
-function M.neotree_component(_, node, _)
-  local ok, st = pcall(require("agentdiff").path_status, node.path)
-  if not ok or not st then
-    return {}
-  end
-  if st == "dir" and node.is_expanded and node:is_expanded() then
-    return {}
-  end
-  return { text = "󰚩 ", highlight = st == "file" and "AgentdiffTreeFile" or "AgentdiffTreeDir" }
-end
-
----neo-tree's default renderers with the `agentdiff` component placed just
----before `git_status` (copied at setup, so the rest follows neo-tree updates).
----@return table
-function M.neotree_renderers()
-  local renderers = vim.deepcopy(require("neo-tree.defaults").renderers)
-  for _, kind in ipairs({ "file", "directory" }) do
-    for _, part in ipairs(renderers[kind] or {}) do
-      if part[1] == "container" then
-        local at = #part.content + 1
-        for i, c in ipairs(part.content) do
-          if c[1] == "git_status" then
-            at = i
-            break
-          end
-        end
-        table.insert(part.content, at, { "agentdiff", zindex = 20, align = "right" })
-      end
-    end
-  end
-  return renderers
+---Keymap actions the installed agentdiff knows (older versions reject unknown
+---ones, so newer actions are added only once the plugin has them).
+---@param name string
+---@return boolean
+local function has_action(name)
+  local ok, cfg = pcall(require, "agentdiff.config")
+  return ok and vim.tbl_contains(cfg.keymap_fields or {}, name)
 end
 
 function M.setup()
-  if not load() then
-    return
-  end
   local agentdiff = require("agentdiff")
+  local keymaps = {
+    next = "]a",
+    prev = "[a",
+    next_file = "]A",
+    prev_file = "[A",
+    keep = "<leader>rk",
+    undo = "<leader>ru",
+    keep_file = "<leader>rK",
+    undo_file = "<leader>rU",
+    keep_all = "<leader>ra",
+    undo_all = "<leader>rA",
+    panel = "<leader>rr",
+    view = "<leader>rv",
+    overlay = "<leader>rh",
+    resolve = "<leader>rc",
+  }
+  -- the changed-files panel as a tree / as a list (each toggles its own view
+  -- and switches from the other one)
+  if has_action("panel_tree") then
+    keymaps.panel_tree = "<leader>rp"
+    keymaps.panel_list = "<leader>rP"
+  end
+  -- Panel width: 30% of the editor, but never narrower than 45 columns
+  -- (a function size needs a recent agentdiff; older ones get plain 30%).
+  local cfg_ok, cfg = pcall(require, "agentdiff.config")
+  local panel_size = (cfg_ok and cfg.valid_size)
+      and function(ctx)
+        return math.max(45, math.floor(ctx.total * 0.3))
+      end
+    or "30%"
+
   agentdiff.setup({
-    keymaps = {
-      next = "]a",
-      prev = "[a",
-      next_file = "]A",
-      prev_file = "[A",
-      keep = "<leader>rk",
-      undo = "<leader>ru",
-      keep_file = "<leader>rK",
-      undo_file = "<leader>rU",
-      keep_all = "<leader>ra",
-      undo_all = "<leader>rA",
-      panel = "<leader>rr",
-      view = "<leader>rv",
-      overlay = "<leader>rh",
-      resolve = "<leader>rc",
-    },
+    panel = { size = panel_size },
+    -- Review only what agent CLIs report through their hooks (installed once
+    -- with `:Agentdiff hooks install`); generators, file explorers and other
+    -- programs writing into the project are never shown as agent changes.
+    attribution = "hooks",
+    keymaps = keymaps,
   })
 
   -- On/off, persisted across restarts (ui/toggles group).
   vim.keymap.set("n", "<leader>uR", agentdiff.toggle, { desc = "Toggle agent review" })
 
-  -- Statusline (and neo-tree marks): refreshed whenever pending changes change.
+  -- Statusline: refreshed whenever pending changes change.
   require("plugins.lualine").register({
     icon = "󰚩",
     render = agentdiff.status,
@@ -130,23 +92,18 @@ function M.setup()
       pcall(function()
         require("lualine").refresh()
       end)
-      if package.loaded["neo-tree"] then
-        pcall(function()
-          require("neo-tree.sources.manager").refresh("filesystem")
-        end)
-      end
     end,
   })
 
-  -- oil renames/moves/deletes write to disk directly: claim them before and
-  -- after (directories claim every file under them).
-  vim.api.nvim_create_autocmd("User", {
-    group = vim.api.nvim_create_augroup("agentdiff_oil", { clear = true }),
-    pattern = { "OilActionsPre", "OilActionsPost" },
-    callback = function(ev)
-      agentdiff.claim(oil_paths(ev.data and ev.data.actions))
-    end,
-  })
+  -- neo-tree marks refresh, and oil's file operations count as mine.
+  local nt = M.integration("neotree")
+  if nt then
+    nt.setup()
+  end
+  local oil = M.integration("oil")
+  if oil then
+    oil.setup()
+  end
 end
 
 return M

@@ -19,7 +19,7 @@ AI agents (Claude Code, Copilot CLI, Codex) run in a tmux pane next to Neovim an
 ## Capabilities
 
 ### New Capabilities
-- `agent-change-review`: detecting, attributing, displaying and resolving file changes made by external agents — baseline store, writer attribution and claims, merging with user edits, git-guard, inline overlay, navigation, keep/undo at every granularity, changed-files panel, statusline component and the plugin's public API.
+- `agent-change-review`: detecting, attributing, displaying and resolving file changes made by external agents — baseline store, writer attribution and claims, merging with user edits, git-guard, inline overlay, navigation, keep/undo at every granularity, changed-files panel, statusline component and the plugin's public API. *Moved:* once the plugin got its own repository, this capability's spec moved to `openspec/specs/agent-change-review/` in RayIci/agentdiff.nvim, where its changes are now planned; this change keeps only the configuration's deltas.
 
 ### Modified Capabilities
 - `editing-experience`: adds the host wiring for the agentdiff plugin (keymaps, which-key group, tool claims, statusline widget).

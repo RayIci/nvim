@@ -72,6 +72,7 @@ vim.pack.add({
   { src = gh("pwntester/octo.nvim"), version = "7566ab21843bf0de721f72891733c0372738d3ee" },
   gh("zbirenbaum/copilot.lua"),
   gh("folke/sidekick.nvim"),
+  gh("RayIci/agentdiff.nvim"),
 
   -- Pickers / navigation
   -- telescope on master: 0.1.x calls the removed vim.treesitter ft_to_lang API

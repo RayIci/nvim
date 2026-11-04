@@ -82,9 +82,22 @@
 ## 13. Extraction to its own repository
 
 - [x] 13.1 Copy `lua/agentdiff/` and the tests to `~/Github/agentdiff.nvim` (`lua/agentdiff/`, `tests/`), fixing the runner's and specs' repository paths; verify the full suite passes from the new location and loads the new copy
-- [x] 13.2 Load the plugin from the repository in `lua/plugins/agentdiff.lua` (runtimepath, `$AGENTDIFF_DIR`, help tags) and remove the copies from the configuration; verify the real config starts with review ready and the keymaps mapped
+- [x] 13.2 Publish the repository as `RayIci/agentdiff.nvim`, install it with `vim.pack` (`lua/config/pack.lua`, `nvim-pack-lock.json`) and remove the copies from the configuration; verify the real config starts with review ready and the keymaps mapped
 - [x] 13.3 Write `doc/agentdiff.txt` and `docs/` (architecture, attribution, detection, merge3, review UI, testing, decisions) with Mermaid diagrams; verify `:help agentdiff` opens with no duplicate tags and every Mermaid block parses
 - [x] 13.4 Add `.gitignore`, `Makefile` (`test`, `fmt`, `fmt-check`, `helptags`), `.luarc.json` and `.stylua.toml`; verify `make test` and `make fmt-check` pass
+
+## 14. VS Code parity: staging and conflicts
+
+- [x] 14.1 Make keep and undo end a conflict (keep: agent's version with your non-overlapping unsaved edits; undo: as resolve "mine"), clearing the conflict and resyncing the buffer; verify tests for "Keep a conflicted file" and "Undo a conflicted file", including no `FileChangedShell` on `:checktime` afterwards and `path_status` nil
+- [x] 14.2 Keep staged changes when the project's index changes (`keep_on_stage`, default on): a pending hunk is kept when no hunk of diff(index, disk) touches its region; verify tests for "Stage a file", "Stage one hunk", "Commit all", "Unstage after staging", "Staging keeps disabled", and update the "Commit of other files" and "Unstaged agent edit shown" tests
+- [x] 14.3 Document staging = keep, `keep_on_stage` and conflict keep/undo in the README, `doc/agentdiff.txt` and `docs/` (attribution, decisions); verify the API doc tests pass and every Mermaid block still parses
+- [x] 14.4 Sync the updated `agent-change-review` delta into the main spec; verify `openspec validate --specs --strict`
+
+## 15. Stale pending changes and reset
+
+- [x] 15.1 Run the staging-keeps check once when review starts with an existing baseline, and keep committed deletions (gone from disk and index, tracked before); verify tests for "Committed before review started" and "Committed deletion"
+- [x] 15.2 Add `reset()` and `:Agentdiff reset` (confirmation, current project only); verify tests for "Reset the current project" and "Other projects untouched"
+- [x] 15.3 Document both in the README, `doc/agentdiff.txt` and `docs/`, and sync the delta into the main spec; verify the API doc tests, Mermaid parsing and `openspec validate --specs --strict`
 
 ## 10. End-to-end verification
 
@@ -95,5 +108,4 @@
 
 ## Workflow follow-up
 
-- Archive the change after the end-to-end checks pass, syncing the `agent-change-review`, `editing-experience` and `vale-engine` specs.
-- Publish `~/Github/agentdiff.nvim` and replace the runtimepath line in `lua/plugins/agentdiff.lua` with a `vim.pack` entry.
+- Archive the change after the end-to-end checks pass. Its specs (`editing-experience`, `ui-shell`, `vale-engine`) are already synced; `agent-change-review` now lives in the plugin repository; sync again only if a check leads to spec changes.
