@@ -26,29 +26,55 @@ function M.grug_far_before_edit(on_finish, file)
   on_finish("success")
 end
 
+---Keymap actions the installed agentdiff knows (older versions reject unknown
+---ones, so newer actions are added only once the plugin has them).
+---@param name string
+---@return boolean
+local function has_action(name)
+  local ok, cfg = pcall(require, "agentdiff.config")
+  return ok and vim.tbl_contains(cfg.keymap_fields or {}, name)
+end
+
 function M.setup()
   local agentdiff = require("agentdiff")
+  local keymaps = {
+    next = "]a",
+    prev = "[a",
+    next_file = "]A",
+    prev_file = "[A",
+    keep = "<leader>rk",
+    undo = "<leader>ru",
+    keep_file = "<leader>rK",
+    undo_file = "<leader>rU",
+    keep_all = "<leader>ra",
+    undo_all = "<leader>rA",
+    panel = "<leader>rr",
+    view = "<leader>rv",
+    overlay = "<leader>rh",
+    resolve = "<leader>rc",
+  }
+  -- the changed-files panel as a tree / as a list (each toggles its own view
+  -- and switches from the other one)
+  if has_action("panel_tree") then
+    keymaps.panel_tree = "<leader>rp"
+    keymaps.panel_list = "<leader>rP"
+  end
+  -- Panel width: 30% of the editor, but never narrower than 45 columns
+  -- (a function size needs a recent agentdiff; older ones get plain 30%).
+  local cfg_ok, cfg = pcall(require, "agentdiff.config")
+  local panel_size = (cfg_ok and cfg.valid_size)
+      and function(ctx)
+        return math.max(45, math.floor(ctx.total * 0.3))
+      end
+    or "30%"
+
   agentdiff.setup({
+    panel = { size = panel_size },
     -- Review only what agent CLIs report through their hooks (installed once
     -- with `:Agentdiff hooks install`); generators, file explorers and other
     -- programs writing into the project are never shown as agent changes.
     attribution = "hooks",
-    keymaps = {
-      next = "]a",
-      prev = "[a",
-      next_file = "]A",
-      prev_file = "[A",
-      keep = "<leader>rk",
-      undo = "<leader>ru",
-      keep_file = "<leader>rK",
-      undo_file = "<leader>rU",
-      keep_all = "<leader>ra",
-      undo_all = "<leader>rA",
-      panel = "<leader>rr",
-      view = "<leader>rv",
-      overlay = "<leader>rh",
-      resolve = "<leader>rc",
-    },
+    keymaps = keymaps,
   })
 
   -- On/off, persisted across restarts (ui/toggles group).
