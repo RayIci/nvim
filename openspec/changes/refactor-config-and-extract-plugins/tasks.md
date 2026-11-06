@@ -15,7 +15,7 @@
 
 ## 3. One installer and per-module install specs
 
-- [ ] 3.1 Add `install(specs)` to `lua/config/pack.lua` (shorthand expansion, PackChanged build hooks, one `vim.pack.add(..., { confirm = false })`) and use it from `lua/langs/init.lua` in place of its own build-hook wiring; verify a headless startup installs nothing new and `telescope-fzf-native` and language-pack build hooks are still registered
+- [x] 3.1 Add `install(specs)` to `lua/config/pack.lua` (shorthand expansion, PackChanged build hooks, one `vim.pack.add(..., { confirm = false })`) and use it from `lua/langs/init.lua` in place of its own build-hook wiring; verify a headless startup installs nothing new and `telescope-fzf-native` and language-pack build hooks are still registered
 - [ ] 3.2 Make `lua/plugins/init.lua` export the ordered module list and a `setup()`; give every `lua/plugins/*.lua` module an `M.spec` with the plugins it configures (themes and themery in `plugins/theme.lua`, promise-async in `plugins/folding.lua`, and so on) and keep only shared libraries and vim-tmux-navigator in `pack.lua`; verify the set of declared plugins is identical before and after (compare the sorted `src` lists) and `nvim-pack-lock.json` is unchanged
 - [ ] 3.3 Add a headless check that loads every `lua/plugins/*.lua` module with only the config on `runtimepath` and fails on any error; verify it passes and fails when a top-level plugin `require` is introduced
 - [ ] 3.4 Update the README "Plugin updates" and layout sections to describe where install specs live; verify the described steps for adding a plugin work on a throwaway module
