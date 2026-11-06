@@ -2,19 +2,19 @@
 
 ## 1. Install diffbandit
 
-- [x] 1.1 Create `lua/plugins/diffbandit.lua` with `M.spec = { { src = "CoreyKaylor/diffbandit.nvim", version = vim.version.range("0") } }` and a `setup()` that calls `require("diffbandit").setup()`. Add `"diffbandit"` to `M.modules` in `lua/plugins/init.lua` after `"diffview"`. Verify with `nvim --headless -u NONE -l tests/plugin-modules.lua`.
-- [x] 1.2 Start Neovim once so vim.pack installs it. Verify that `nvim-pack-lock.json` gains a `diffbandit.nvim` entry whose revision is the `v0.3.0` tag's commit (`git ls-remote https://github.com/CoreyKaylor/diffbandit.nvim v0.3.0`), and that a clean headless start exits 0 with no errors.
+- [x] 1.1 Create `lua/plugins/diffbandit.lua` with `M.spec = { { src = "CoreyKaylor/diffbandit.nvim", version = "main" } }` and a `setup()` that calls `require("diffbandit").setup()`. Add `"diffbandit"` to `M.modules` in `lua/plugins/init.lua` after `"diffview"`. Verify with `nvim --headless -u NONE -l tests/plugin-modules.lua`.
+- [x] 1.2 Start Neovim once so vim.pack installs it, then move the installed copy to `main` with `vim.pack.update({ "diffbandit.nvim" }, { force = true })`. Verify that `nvim-pack-lock.json` has a `diffbandit.nvim` entry with `version` `main` and a revision equal to `main`'s head (`git ls-remote https://github.com/CoreyKaylor/diffbandit.nvim v0.3.0`), and that a clean headless start exits 0 with no errors.
 
 ## 2. Options and keymaps
 
-- [ ] 2.1 Pass the staging-key options to `setup()`. All four are `-`:
+- [x] 2.1 Pass the staging-key options to `setup()`. All four are `-`:
   - `actions.keys.toggle_stage`
   - `git.panel.keys.toggle_stage`
   - `git.panel.keys.toggle_amend`
   - `folder.keys.toggle_expand`
 
-  Verify in a headless check against a temporary git repository with one modified file. After `:DiffBanditGit`, the right pane has a buffer-local `-` mapping described "DiffBandit: …", and no buffer-local `<Space>` mapping in the diff panes or the commit panel.
-- [ ] 2.2 Add the `<leader>gx` keymaps:
+  Verify in a headless check against a temporary git repository with one modified file. After `:DiffBanditGit`, the right pane has a buffer-local `nowait` `-` mapping described "DiffBandit: Stage or unstage the active hunk", the commit panel's file list and message window map `-`, and no diff pane or panel window has a buffer-local `<Space>` mapping.
+- [x] 2.2 Add the `<leader>gx` keymaps:
 
   | Key | Runs |
   |---|---|
@@ -28,7 +28,7 @@
   | `gxq` | `DiffBanditClose` |
 
   Give each a `desc`. Add `{ "<leader>gx", group = "diffbandit" }` to `lua/plugins/whichkey.lua`. Verify with `maparg` in a headless start that all eight exist with descriptions and that `<leader>gdd` still maps to `DiffviewOpen`.
-- [ ] 2.3 In the headless repository check, verify the keys behave:
+- [x] 2.3 In the headless repository check, verify the keys behave:
   - `-` stages the hunk under the cursor (`git diff --cached` is no longer empty), and `-` again unstages it.
   - `<leader>gxq` closes the view and its tab.
   - `u` after an ordinary edit in the right pane undoes that edit.
@@ -52,7 +52,7 @@
 
 - [ ] 4.1 Update the README:
   - The `<leader>gx` keys and the in-view `-` staging key go in the key-binding section.
-  - Add a short "diffbandit (trial)" note covering four things: it sits next to diffview, updates follow releases only, views close on worktree switch and on exit, and commitsmith may not attach to its commit-message window.
+  - Add a short "diffbandit (trial)" note covering four things: it sits next to diffview, it tracks `main` until a release has the close API, views close on worktree switch and on exit, and commitsmith may not attach to its commit-message window.
   - Add `tests/diffbandit.lua` wherever the tests are listed.
 
   Verify that every documented key exists (`maparg`) and that the test command runs as written.
@@ -64,5 +64,6 @@
 ## Workflow follow-up
 
 - Make small commits on `add-diffbandit`, stacked on `refactor-config-and-extract-plugins`.
+- When a diffbandit release includes `close()`, `:DiffBanditClose` and commit-message drafts (expected v0.4.0), change `version = "main"` to `vim.version.range("0")` in `lua/plugins/diffbandit.lua`, run `vim.pack.update({ "diffbandit.nvim" })`, and commit the lockfile.
 - The user tries diffbandit for a while, then decides between keeping both, replacing diffview (a separate change), or removing diffbandit.
 - Archive `add-diffbandit` after `refactor-config-and-extract-plugins` is archived, since both modify `git-integration`.

@@ -22,6 +22,7 @@ function M.setup()
     { "<leader>g", group = "git" },
     { "<leader>gw", group = "worktrees" },
     { "<leader>gd", group = "diffview" },
+    { "<leader>gx", group = "diffbandit" },
     { "<leader>gC", group = "conflict" },
     { "<leader>gh", group = "github" },
     { "<leader>ghi", group = "issues" },
