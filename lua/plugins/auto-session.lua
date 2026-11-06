@@ -24,7 +24,8 @@ function M.setup()
     bypass_save_filetypes = { "neo-tree", "trouble", "OverseerList", "oil" },
     -- scope.nvim per-tab buffer state rides the session as a global variable
     -- ('globals' is in sessionoptions).
-    pre_save_cmds = { workspace.session.pre_save },
+    -- diffbandit's views are closed before the exit-time save (only then).
+    pre_save_cmds = { workspace.session.pre_save, require("plugins.diffbandit").close_on_exit },
     pre_restore_cmds = { workspace.session.pre_restore },
     post_restore_cmds = { workspace.session.post_restore },
     session_lens = { load_on_setup = true, previewer = false },

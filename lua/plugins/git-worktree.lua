@@ -17,6 +17,8 @@ function M.setup()
   })
   -- Buffers, pins, breakpoints, explorer and scope state (config/workspace/).
   worktree.register(require("config.workspace").participant)
+  -- Last, so a refusing check (dap: debug session) runs before views close.
+  worktree.register(require("plugins.diffbandit").participant)
 
   vim.api.nvim_create_autocmd("User", {
     group = vim.api.nvim_create_augroup("config.git-worktree", { clear = true }),

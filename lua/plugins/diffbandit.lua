@@ -39,6 +39,27 @@ function M.close_all()
   end
 end
 
+---auto-session pre-save hook: close views only when Neovim is exiting
+---(v:exiting is set by VimLeavePre), so the exit-time session never holds
+---diffbandit's windows while a manual :AutoSession save leaves them open. A
+---manually saved session that did capture a view is overwritten on exit.
+function M.close_on_exit()
+  if vim.v.exiting ~= vim.NIL then
+    M.close_all()
+  end
+end
+
+---git-worktree participant (registered in plugins/git-worktree.lua). It
+---closes views in `check`, the only hook before the unsaved-buffer prompt,
+---whose "Save all" would otherwise write a commit buffer and commit.
+---@type GitWorktreeParticipant
+M.participant = {
+  name = "diffbandit",
+  check = function()
+    M.close_all()
+  end,
+}
+
 local options = {
   actions = { keys = { toggle_stage = toggle } },
   git = { panel = { keys = { toggle_stage = toggle, toggle_amend = toggle } } },
