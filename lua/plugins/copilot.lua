@@ -22,7 +22,10 @@ local function warn_if_signed_out()
       return
     end
   end
-  vim.notify("Copilot is not signed in — run :Copilot auth to enable inline suggestions", vim.log.levels.WARN)
+  vim.notify(
+    "Copilot is not signed in — run :Copilot auth to enable inline suggestions",
+    vim.log.levels.WARN
+  )
 end
 
 function M.setup()

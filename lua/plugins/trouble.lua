@@ -22,7 +22,12 @@ function M.setup()
   map("n", "<leader>kD", "<cmd>Trouble diagnostics toggle filter.buf=0<cr>", { desc = "Buffer diagnostics" })
   map("n", "<leader>kl", "<cmd>Trouble loclist toggle<cr>", { desc = "Location list" })
   map("n", "<leader>kq", "<cmd>Trouble qflist toggle<cr>", { desc = "Quickfix list" })
-  map("n", "<leader>kw", "<cmd>Trouble lsp toggle focus=false win.position=right<cr>", { desc = "LSP defs/refs panel" })
+  map(
+    "n",
+    "<leader>kw",
+    "<cmd>Trouble lsp toggle focus=false win.position=right<cr>",
+    { desc = "LSP defs/refs panel" }
+  )
   map("n", "<leader>ks", "<cmd>Trouble symbols toggle focus=false<cr>", { desc = "Symbols outline" })
 end
 

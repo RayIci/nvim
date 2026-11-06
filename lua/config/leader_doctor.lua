@@ -64,7 +64,10 @@ local function diagnose()
 
   -- What Space resolves to right now (buffer-local wins over global).
   local space = vim.fn.maparg(" ", "n", false, true)
-  table.insert(lines, "Space resolves to: " .. (vim.tbl_isempty(space) and "nothing (native leader)" or describe_map(space)))
+  table.insert(
+    lines,
+    "Space resolves to: " .. (vim.tbl_isempty(space) and "nothing (native leader)" or describe_map(space))
+  )
 
   -- A bare buffer-local Space mapping that isn't which-key's eats the leader.
   for _, map in ipairs(vim.api.nvim_buf_get_keymap(buf, "n")) do
@@ -82,11 +85,17 @@ local function diagnose()
     table.insert(lines, "which-key state active: " .. tostring(State.state ~= nil))
     -- Keys are wk.Mode objects; their __tostring gives "Mode(n:<buf>)".
     local suspended = vim.tbl_map(tostring, vim.tbl_keys(Triggers.suspended))
-    table.insert(lines, "which-key suspended modes: " .. (#suspended > 0 and table.concat(suspended, ", ") or "none"))
-    table.insert(lines, ("which-key disabled here: ft=%s bt=%s"):format(
-      tostring(vim.tbl_contains(Config.disable.ft or {}, vim.bo[buf].filetype)),
-      tostring(vim.tbl_contains(Config.disable.bt or {}, vim.bo[buf].buftype))
-    ))
+    table.insert(
+      lines,
+      "which-key suspended modes: " .. (#suspended > 0 and table.concat(suspended, ", ") or "none")
+    )
+    table.insert(
+      lines,
+      ("which-key disabled here: ft=%s bt=%s"):format(
+        tostring(vim.tbl_contains(Config.disable.ft or {}, vim.bo[buf].filetype)),
+        tostring(vim.tbl_contains(Config.disable.bt or {}, vim.bo[buf].buftype))
+      )
+    )
 
     -- Triggers which-key believes it has here vs. what's really mapped.
     local tracked = 0
@@ -94,11 +103,17 @@ local function diagnose()
       if trigger.buf == buf then
         tracked = tracked + 1
         local real = vim.fn.maparg(trigger.keys, trigger.mode, false, true)
-        local present = not vim.tbl_isempty(real) and real.buffer == 1
+        local present = not vim.tbl_isempty(real)
+          and real.buffer == 1
           and (real.desc or ""):find("which-key-trigger", 1, true) ~= nil
         if not present then
-          table.insert(lines, ("STALE trigger %s: tracked but not mapped (now: %s)"):format(
-            id, vim.tbl_isempty(real) and "nothing" or describe_map(real)))
+          table.insert(
+            lines,
+            ("STALE trigger %s: tracked but not mapped (now: %s)"):format(
+              id,
+              vim.tbl_isempty(real) and "nothing" or describe_map(real)
+            )
+          )
         end
       end
     end
@@ -170,6 +185,7 @@ function M.run()
 end
 
 function M.setup()
-  vim.api.nvim_create_user_command("LeaderDoctor", M.run, { desc = "Diagnose and repair a dead <leader>" })end
+  vim.api.nvim_create_user_command("LeaderDoctor", M.run, { desc = "Diagnose and repair a dead <leader>" })
+end
 
 return M

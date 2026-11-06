@@ -151,7 +151,10 @@ function M.setup(opts)
     local name = args.fargs[1] or "generate"
     local action = subcommands[name]
     if not action then
-      notify(("Unknown subcommand `%s` (try: %s)"):format(name, table.concat(names, ", ")), vim.log.levels.ERROR)
+      notify(
+        ("Unknown subcommand `%s` (try: %s)"):format(name, table.concat(names, ", ")),
+        vim.log.levels.ERROR
+      )
       return
     end
     action()

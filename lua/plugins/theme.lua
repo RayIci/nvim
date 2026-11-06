@@ -84,12 +84,36 @@ function M.setup()
 
     -- Onedark
     { name = "Onedark", colorscheme = "onedark", before = [[require("onedark").setup({ style = "dark" })]] },
-    { name = "Onedark Darker", colorscheme = "onedark", before = [[require("onedark").setup({ style = "darker" })]] },
-    { name = "Onedark Cool", colorscheme = "onedark", before = [[require("onedark").setup({ style = "cool" })]] },
-    { name = "Onedark Deep", colorscheme = "onedark", before = [[require("onedark").setup({ style = "deep" })]] },
-    { name = "Onedark Warm", colorscheme = "onedark", before = [[require("onedark").setup({ style = "warm" })]] },
-    { name = "Onedark Warmer", colorscheme = "onedark", before = [[require("onedark").setup({ style = "warmer" })]] },
-    { name = "Onedark Light (light)", colorscheme = "onedark", before = [[require("onedark").setup({ style = "light" })]] },
+    {
+      name = "Onedark Darker",
+      colorscheme = "onedark",
+      before = [[require("onedark").setup({ style = "darker" })]],
+    },
+    {
+      name = "Onedark Cool",
+      colorscheme = "onedark",
+      before = [[require("onedark").setup({ style = "cool" })]],
+    },
+    {
+      name = "Onedark Deep",
+      colorscheme = "onedark",
+      before = [[require("onedark").setup({ style = "deep" })]],
+    },
+    {
+      name = "Onedark Warm",
+      colorscheme = "onedark",
+      before = [[require("onedark").setup({ style = "warm" })]],
+    },
+    {
+      name = "Onedark Warmer",
+      colorscheme = "onedark",
+      before = [[require("onedark").setup({ style = "warmer" })]],
+    },
+    {
+      name = "Onedark Light (light)",
+      colorscheme = "onedark",
+      before = [[require("onedark").setup({ style = "light" })]],
+    },
 
     -- Everforest
     {
@@ -160,13 +184,33 @@ function M.setup()
     -- Material
     { name = "Material Darker", colorscheme = "material", before = [[vim.g.material_style = "darker"]] },
     { name = "Material Oceanic", colorscheme = "material", before = [[vim.g.material_style = "oceanic"]] },
-    { name = "Material Palenight", colorscheme = "material", before = [[vim.g.material_style = "palenight"]] },
-    { name = "Material Deep Ocean", colorscheme = "material", before = [[vim.g.material_style = "deep ocean"]] },
-    { name = "Material Lighter (light)", colorscheme = "material", before = [[vim.g.material_style = "lighter"]] },
+    {
+      name = "Material Palenight",
+      colorscheme = "material",
+      before = [[vim.g.material_style = "palenight"]],
+    },
+    {
+      name = "Material Deep Ocean",
+      colorscheme = "material",
+      before = [[vim.g.material_style = "deep ocean"]],
+    },
+    {
+      name = "Material Lighter (light)",
+      colorscheme = "material",
+      before = [[vim.g.material_style = "lighter"]],
+    },
 
     -- Cyberdream
-    { name = "Cyberdream", colorscheme = "cyberdream", before = [[require("cyberdream").setup({ variant = "default" })]] },
-    { name = "Cyberdream Light (light)", colorscheme = "cyberdream", before = [[require("cyberdream").setup({ variant = "light" })]] },
+    {
+      name = "Cyberdream",
+      colorscheme = "cyberdream",
+      before = [[require("cyberdream").setup({ variant = "default" })]],
+    },
+    {
+      name = "Cyberdream Light (light)",
+      colorscheme = "cyberdream",
+      before = [[require("cyberdream").setup({ variant = "light" })]],
+    },
     {
       name = "Cyberdream Transparent (vibrant, transparent bg)",
       colorscheme = "cyberdream",

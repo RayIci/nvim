@@ -14,7 +14,11 @@ local settings = require("commitsmith.settings")
 ---@param level integer?
 ---@param opts table?
 local function notify(msg, level, opts)
-  vim.notify(msg, level or vim.log.levels.INFO, vim.tbl_extend("force", { title = "Commitsmith" }, opts or {}))
+  vim.notify(
+    msg,
+    level or vim.log.levels.INFO,
+    vim.tbl_extend("force", { title = "Commitsmith" }, opts or {})
+  )
 end
 
 ---`git commit` launches the editor with GIT_INDEX_FILE (and possibly GIT_DIR and
@@ -323,7 +327,11 @@ local function dispatch(conversation, opts)
           reason = ("%s exited with code %d"):format(name, result.code)
         end
         conversation.error = reason
-        stop_spinner(conversation, ("Commit generation failed: %s"):format(conversation.error), vim.log.levels.WARN)
+        stop_spinner(
+          conversation,
+          ("Commit generation failed: %s"):format(conversation.error),
+          vim.log.levels.WARN
+        )
         session.changed(conversation)
         return
       end
@@ -336,7 +344,11 @@ local function dispatch(conversation, opts)
         if not message then
           conversation.status = "error"
           conversation.error = err or "harness failed"
-          stop_spinner(conversation, ("Commit generation failed: %s"):format(conversation.error), vim.log.levels.WARN)
+          stop_spinner(
+            conversation,
+            ("Commit generation failed: %s"):format(conversation.error),
+            vim.log.levels.WARN
+          )
           session.changed(conversation)
           return
         end
@@ -394,9 +406,7 @@ end
 ---@return string? diff, string? err
 local function staged_diff(buf)
   local cwd = repo_cwd(buf)
-  local result = vim
-    .system({ "git", "diff", "--staged", "--no-ext-diff" }, { text = true, cwd = cwd })
-    :wait()
+  local result = vim.system({ "git", "diff", "--staged", "--no-ext-diff" }, { text = true, cwd = cwd }):wait()
   if result.code ~= 0 then
     return nil, vim.trim(result.stderr or "git diff failed")
   end
@@ -429,7 +439,8 @@ function M.generate(buf)
   local text = prompt.initial(diff, draft)
   session.add(conversation, {
     role = "request",
-    text = draft ~= "" and "Generate a commit message, revising the existing draft." or "Generate a commit message.",
+    text = draft ~= "" and "Generate a commit message, revising the existing draft."
+      or "Generate a commit message.",
     diff = diff,
   })
   dispatch(conversation, { prompt = text })

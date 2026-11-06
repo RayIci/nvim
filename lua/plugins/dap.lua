@@ -29,7 +29,10 @@ local function switch_session()
 
   local session_list = {}
   for id, session in pairs(sessions) do
-    table.insert(session_list, { id = id, session = session, name = session.config.name or ("Session " .. id) })
+    table.insert(
+      session_list,
+      { id = id, session = session, name = session.config.name or ("Session " .. id) }
+    )
   end
 
   local current = dap.session()
@@ -230,7 +233,14 @@ function M.setup()
 
   -- Floating UI elements (full-screen, like the old config)
   local float_opts = { enter = true, width = vim.o.columns, height = vim.o.lines }
-  for key, element in pairs({ r = "repl", c = "console", s = "scopes", b = "breakpoints", S = "stacks", w = "watches" }) do
+  for key, element in pairs({
+    r = "repl",
+    c = "console",
+    s = "scopes",
+    b = "breakpoints",
+    S = "stacks",
+    w = "watches",
+  }) do
     map("n", "<leader>dw" .. key, function()
       dapui.float_element(element, float_opts)
     end, { desc = element:sub(1, 1):upper() .. element:sub(2) })

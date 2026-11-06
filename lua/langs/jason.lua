@@ -4,7 +4,8 @@
 ---(server/, jason_ls).
 
 -- Where vim.pack installs jason.nvim.
-local plugin_path = vim.fs.joinpath(vim.fn.stdpath("data") --[[@as string]], "site", "pack", "core", "opt", "jason.nvim")
+local plugin_path =
+  vim.fs.joinpath(vim.fn.stdpath("data") --[[@as string]], "site", "pack", "core", "opt", "jason.nvim")
 local has_server = vim.uv.fs_stat(vim.fs.joinpath(plugin_path, "server", "dist", "server.js")) ~= nil
 
 -- plugins.treesitter installs parsers before plugin/ files (where jason.nvim
@@ -14,7 +15,11 @@ vim.api.nvim_create_autocmd("User", {
   pattern = "TSUpdate",
   callback = function()
     require("nvim-treesitter.parsers").jason = {
-      install_info = { path = plugin_path, location = "tree-sitter-jason", queries = "tree-sitter-jason/queries" },
+      install_info = {
+        path = plugin_path,
+        location = "tree-sitter-jason",
+        queries = "tree-sitter-jason/queries",
+      },
     }
   end,
 })

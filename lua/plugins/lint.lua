@@ -48,9 +48,13 @@ function M.apply(linters_by_ft)
         return
       end
       timer:stop()
-      timer:start(400, 0, vim.schedule_wrap(function()
-        try_lint(ev.buf)
-      end))
+      timer:start(
+        400,
+        0,
+        vim.schedule_wrap(function()
+          try_lint(ev.buf)
+        end)
+      )
     end,
   })
 end
