@@ -35,7 +35,7 @@
 
 ## 3. Close views with the workspace
 
-- [ ] 3.1 Add `M.close_all()` to `lua/plugins/diffbandit.lua`. It returns at once when `package.loaded.diffbandit` is nil. Otherwise, for every tab where `require("diffbandit").is_running({ tab = t, panel = true })`, it makes the tab current and calls `close()`, then returns to the starting tab if it still exists. Verify headlessly:
+- [x] 3.1 Add `M.close_all()` to `lua/plugins/diffbandit.lua`. It returns at once when `package.loaded.diffbandit` is nil. Otherwise, for every tab where `require("diffbandit").is_running({ tab = t, panel = true })`, it makes the tab current and calls `close()`, then returns to the starting tab if it still exists. Verify headlessly:
   - With a diff view in one tab and a standalone commit panel in another, both close and the remaining tabs are untouched.
   - In a fresh start where diffbandit was never opened, `close_all()` leaves `package.loaded.diffbandit` nil.
 - [ ] 3.2 Add `M.participant = { name = "diffbandit", check = M.close_all }`. In `lua/plugins/git-worktree.lua`, register it right after the workspace participant. Verify in a headless switch between two worktrees of a temporary repository, using the installed git-worktree.nvim and auto-session the way `tests/workspace.lua` does:

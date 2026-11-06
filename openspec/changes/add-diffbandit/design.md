@@ -24,7 +24,7 @@
 **Goals:**
 - Try diffbandit as a second diff viewer without touching any existing git plugin.
 - diffbandit never leaves windows or buffers in a saved session, and is never written by a worktree switch.
-- If diffbandit was never opened in this Neovim, the config does not load it.
+- diffbandit is not loaded at startup, and is not loaded at all if it was never opened.
 
 **Non-Goals:**
 - A diffview replacement path, or a shared "close all diff viewers" helper for diffview (it can reuse the same participant later).
@@ -51,6 +51,14 @@ The other modules only reference these functions:
 That keeps the pattern already used for `config.workspace.participant`, and both modules load without diffbandit installed.
 
 *Alternative:* register the participant from `diffbandit.lua`'s own setup through `pcall(require, "git-worktree")`. Rejected because it hides the list of participants. `git-worktree.lua` stays the single place that says what takes part in a switch.
+
+### Configure diffbandit on first require
+
+`require("diffbandit")` loads about 50 modules (about 10 ms). diffbandit's `plugin/` file only defines commands so that this cost is paid on first use. Calling `setup()` at startup would pay it every time.
+
+So `M.setup()` installs a one-shot `package.preload.diffbandit` loader instead. On the first `require` (a command, a `<leader>gx` key, or `close_all()` once a view exists), it loads the module file from `runtimepath`, calls `setup(options)` and returns the module. If something loaded diffbandit before `M.setup()` ran, `setup(options)` is called directly.
+
+*Alternative:* call `setup()` eagerly. Rejected for the startup cost.
 
 ### Close in `check`, not in `flush` or `reset`
 
