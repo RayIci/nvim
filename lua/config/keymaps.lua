@@ -25,7 +25,7 @@ map("n", "<C-\\>", "<cmd>TmuxNavigatePrevious<cr>", { desc = "Previous window/pa
 map("n", "<C-s>", "<cmd>w<cr>", { desc = "Save file" })
 map("i", "<C-s>", "<Esc><cmd>w<cr>", { desc = "Save file and leave insert mode" })
 
--- Clear search highlight (alongside <Esc> below)
+-- Clear search highlight (alongside <Esc> above)
 map("n", "<C-x>", "<cmd>nohlsearch<cr>", { desc = "Clear search highlight" })
 
 -- <C-c> skips InsertLeave, leaving Copilot ghost text on screen and stalling
