@@ -80,7 +80,6 @@ vim.api.nvim_create_autocmd("VimEnter", {
       }
       vim.fn.writefile({ vim.json.encode(result) }, assert(vim.env.NVIM_WORKTREE_TEST_RESULT))
       require("config.workspace").pause()
-      require("plugins.auto-session").pause()
       require("auto-session.config").auto_save = false
       vim.cmd("qa!")
     end, 800)

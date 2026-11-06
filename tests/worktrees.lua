@@ -325,7 +325,7 @@ local ok, failure = xpcall(function()
   require("config.workspace").setup()
   require("plugins.worktrees").setup()
   local workspace = require("config.workspace")
-  local persistence = require("plugins.auto-session")
+  local persistence = require("config.workspace")
   local session = require("auto-session")
   local session_config = require("auto-session.config")
   local breakpoints = require("dap.breakpoints")
@@ -1055,13 +1055,10 @@ assert(
   "Neogit refreshes did not finish"
 )
 vim.api.nvim_set_current_dir(config)
-for _, group in ipairs({ "config.workspace", "config.auto-session.neotree" }) do
+for _, group in ipairs({ "config.workspace", "config.workspace.explorer" }) do
   if vim.fn.exists("#" .. group) == 1 then
     vim.api.nvim_del_augroup_by_name(group)
   end
-end
-if package.loaded["plugins.auto-session"] then
-  package.loaded["plugins.auto-session"].pause()
 end
 if package.loaded["config.workspace"] then
   package.loaded["config.workspace"].pause()

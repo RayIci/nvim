@@ -318,7 +318,7 @@ local function reset_editor()
   local buffers = vim.api.nvim_list_bufs()
   local blank = vim.api.nvim_create_buf(true, false)
   vim.api.nvim_set_current_buf(blank)
-  require("plugins.auto-session").reset_workspace()
+  require("config.workspace").reset_workspace()
   vim.cmd("silent tabonly")
   vim.cmd("silent only")
   for _, buf in ipairs(buffers) do
@@ -351,7 +351,6 @@ function M.switch_to(ctx, path)
   check_context(ctx)
 
   local workspace = require("config.workspace")
-  local persistence = require("plugins.auto-session")
   local session = require("auto-session")
   local session_config = require("auto-session.config")
   local auto_save = session_config.auto_save
@@ -379,11 +378,9 @@ function M.switch_to(ctx, path)
   local source_session = ""
   local changed = false
   workspace.pause()
-  persistence.pause()
   session_config.auto_save = false
   local ok, err = pcall(function()
     workspace.flush()
-    persistence.flush()
     if not session.save_session(source, { show_message = false }) then
       error("Could not save the outgoing session", 0)
     end
@@ -398,20 +395,19 @@ function M.switch_to(ctx, path)
         error("Could not restore the destination session: " .. target.path .. "\n" .. tostring(result), 0)
       end
     end
-    persistence.restore_workspace(true)
+    workspace.restore_workspace(true)
     bind_neogit(target.path)
     vim.cmd.clearjumps()
   end)
   if not ok and changed then
     local recovered, recovery_error = pcall(function()
       workspace.pause()
-      persistence.pause()
       reset_editor()
       vim.api.nvim_set_current_dir(source)
       if source_session == "" or not restore(source_session) then
         error("Could not restore source session: " .. source_session, 0)
       end
-      persistence.restore_workspace(true)
+      workspace.restore_workspace(true)
       bind_neogit(fresh.current)
     end)
     if not recovered then
@@ -429,7 +425,6 @@ function M.switch_to(ctx, path)
   end
   session_config.auto_save = auto_save
   workspace.resume()
-  persistence.resume()
   if not ok then
     error(tostring(err), 0)
   end
