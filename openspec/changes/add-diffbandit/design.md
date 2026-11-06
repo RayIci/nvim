@@ -70,13 +70,18 @@ That keeps the pattern already used for `config.workspace.participant`, and both
 
 *Alternative:* close on every pre-save. Rejected because `<leader>qs` would close the view you are reviewing.
 
-### Version range `vim.version.range("0")`
+### Track `main` until a release has the close API, then `vim.version.range("0")`
 
-`config.pack` passes `version` through to `vim.pack`, and `blink.cmp` already uses `vim.version.range("1")`. The lockfile pins the exact revision. The range only limits what `vim.pack.update()` offers: the newest release tag below 1.0, not commits on `main`, which had 44 in the last 30 days.
+The plan was first written against `main`'s README. The latest release, v0.3.0 (Nov 3), predates about 30 commits that this design needs:
+- `close()` and `:DiffBanditClose` (Nov 4).
+- Commit-panel drafts, and deleting the panel's buffers on close. In v0.3.0, closing a panel only hides it, which leaves a modified `acwrite` commit buffer behind that "Save all and switch" would write, and so commit.
+- `q` closing every view, and `g?` help.
+
+So the spec uses `version = "main"`. The lockfile pins the exact revision, and `vim.pack.update()` shows `main`'s new commits for confirmation. Once a release contains these features (expected v0.4.0), switch to `vim.version.range("0")`, the way `blink.cmp` uses `vim.version.range("1")`. That's a one-line change, listed under workflow follow-up.
 
 *Alternatives:*
-- `"v0.3.0"`: never offered fixes during the trial.
-- No version: tracks `main`.
+- Stay on v0.3.0 and close views through diffbandit's internal `state` module. Rejected because it relies on internals that are changing upstream, and the commit-message draft would be lost.
+- Wait for v0.4.0. Rejected because it delays the trial by a release cycle (5 to 8 weeks so far).
 
 ### Keys
 
@@ -91,8 +96,8 @@ That keeps the pattern already used for `config.workspace.participant`, and both
 
 ## Risks / Trade-offs
 
-- **diffbandit changes before 1.0.** A 0.x minor release may rename options or keys.
-  - Mitigation: the range only moves through `vim.pack.update()`, which shows the incoming release for confirmation. The lockfile is in git, so `git checkout nvim-pack-lock.json` rolls it back.
+- **Tracking `main` brings in unreleased changes.** Options or keys may be renamed between commits, and `main` moves fast (44 commits in 30 days).
+  - Mitigation: nothing moves except through `vim.pack.update()`, which shows the incoming commits for confirmation. The lockfile is in git, so `git checkout nvim-pack-lock.json` rolls it back.
 - **`close()` from the launcher quits Neovim.** `close()` runs `confirm qall` under `bin/diffbandit`.
   - Mitigation: the launcher is out of scope and not installed, and `close_all()` only runs on switch and exit.
 - **commitsmith may not attach to diffbandit's commit-message window.** It needs `filetype=gitcommit`.

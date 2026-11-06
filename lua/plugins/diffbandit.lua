@@ -6,9 +6,10 @@ local M = {}
 
 ---@type (string|PackSpec)[]
 M.spec = {
-  -- Releases only: vim.pack.update() offers the newest tag below 1.0, never
-  -- an untagged commit on main. The lockfile pins the exact revision.
-  { src = "CoreyKaylor/diffbandit.nvim", version = vim.version.range("0") },
+  -- main until a release has close(), :DiffBanditClose and commit-message
+  -- drafts (v0.3.0 has none of them); then vim.version.range("0"). The
+  -- lockfile pins the exact revision either way.
+  { src = "CoreyKaylor/diffbandit.nvim", version = "main" },
 }
 
 function M.setup()

@@ -3,15 +3,15 @@
 ## ADDED Requirements
 
 ### Requirement: Diff review via diffbandit.nvim
-The configuration SHALL install diffbandit.nvim from `CoreyKaylor/diffbandit.nvim` alongside diffview.nvim, constrained to its tagged releases below 1.0, so that a plugin update moves only to a newer release and never to an untagged commit. The existing diffview, Neogit, gitsigns and git-conflict keymaps and integrations SHALL keep their behavior.
+The configuration SHALL install diffbandit.nvim from `CoreyKaylor/diffbandit.nvim` alongside diffview.nvim, tracking its `main` branch, because the latest release (v0.3.0) lacks the close API and commit-message drafts this configuration relies on. The lockfile SHALL pin the exact revision, so diffbandit changes only through a plugin update the user confirms. The existing diffview, Neogit, gitsigns and git-conflict keymaps and integrations SHALL keep their behavior.
 
 #### Scenario: Both diff viewers available
 - **WHEN** the user presses `<leader>gdd` and, in another tab, `<leader>gxx`
 - **THEN** the first opens a diffview tab and the second opens a diffbandit view of the working-tree changes
 
-#### Scenario: Updates follow releases
-- **WHEN** the user runs a plugin update while diffbandit's default branch has commits newer than its latest release tag
-- **THEN** diffbandit is offered only the newest release tag below 1.0, and the lockfile records that revision
+#### Scenario: Revision changes only through an update
+- **WHEN** diffbandit's `main` gains new commits and the user starts Neovim without running a plugin update
+- **THEN** diffbandit stays at the revision recorded in the lockfile
 
 ### Requirement: Diffbandit keymaps under `<leader>gx`
 The configuration SHALL map diffbandit under a `<leader>gx` which-key group, every key with a description:

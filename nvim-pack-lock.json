@@ -62,9 +62,9 @@
       "src": "https://github.com/RayIci/dataframe-preview.nvim"
     },
     "diffbandit.nvim": {
-      "rev": "f190e33d807c07a97259472e13a3bba3299f0f80",
+      "rev": "a4c0a7a00c889f98e9d5a1044dc63ef367d6ca9b",
       "src": "https://github.com/CoreyKaylor/diffbandit.nvim",
-      "version": "0.0.0 - 1.0.0"
+      "version": "'main'"
     },
     "diffview.nvim": {
       "rev": "4516612fe98ff56ae0415a259ff6361a89419b0a",

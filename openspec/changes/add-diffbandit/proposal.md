@@ -6,7 +6,7 @@ diffbandit.nvim offers a different way to review changes. It shows two panes tha
 
 ## What Changes
 
-- Install `CoreyKaylor/diffbandit.nvim` through vim.pack with a release range (`vim.version.range("0")`), so `vim.pack.update()` only moves to tagged releases below 1.0. The lockfile records the exact revision.
+- Install `CoreyKaylor/diffbandit.nvim` through vim.pack, tracking `main` (`version = "main"`), because the latest release, v0.3.0, lacks `close()`, `:DiffBanditClose` and commit-message drafts. Once a release includes them, switch to `vim.version.range("0")` so updates follow releases only. The lockfile records the exact revision.
 - Add a `<leader>gx` which-key group with diffbandit's main views:
 
   | Key | Opens |
