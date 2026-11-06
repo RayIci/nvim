@@ -12,7 +12,7 @@ The configuration has grown three plugin-sized subsystems that live in-tree (`lu
 - **Co-locate plugin install specs**: each `lua/plugins/<name>.lua` declares the plugins it sets up; `lua/config/pack.lua` collects them (plus shared libraries no single module owns) into its single `vim.pack.add()` call. The PackChanged build-hook wiring that `pack.lua` and the language-pack loader each implement becomes one shared installer.
 - **Shared persistence helper** `lua/config/state.lua` (JSON store, per-project state path, debounced saver with pause/resume/flush/generation) replaces the four JSON read/write copies and the two identical debounce implementations.
 - **Workspace persistence split by concern**: `lua/config/workspace.lua` becomes the `lua/config/workspace/` package (buffers, breakpoints, pins, explorer, scope); `lua/plugins/auto-session.lua` shrinks to auto-session setup and its keymaps.
-- **Keymap fixes**: multicursor's line/rotate keys move to `<C-S-Up/Down/Left/Right>` so they no longer collide with window resize on `<C-arrows>` in normal mode (which silently disabled them). The README documents unbinding Windows Terminal's default `ctrl+shift+up/down` scroll actions.
+- **Keymap fixes**: multicursor's line/rotate keys move to `<M-Up/Down/Left/Right>` so they no longer collide with window resize on `<C-arrows>` in normal mode (which silently disabled them). The README documents unbinding Alt+arrows in terminals that use them (Windows Terminal, Ghostty, Konsole, iTerm2, Terminal.app, tmux).
 - **Small fixes**: remove the duplicated `require("config.options")` and comment in `init.lua`; fix the misplaced "below" comment in `lua/config/keymaps.lua`.
 - **Housekeeping**: archive the completed `add-git-worktree-workspaces` change first (its requirements are partly moved out by this change). The in-progress `add-agentdiff-plugin` change and the remote `main-worktree` branch are left alone.
 
@@ -29,7 +29,7 @@ None in this configuration. Each extracted plugin gets its own `openspec/` in it
 - `vale-studio`: all requirements removed; they move to vale.nvim.
 - `git-integration`: the commit-message wiring installs the published plugin; the worktree creation/destination/deletion requirements move to git-worktree.nvim; a new worktree plugin wiring requirement replaces "Managed worktree actions".
 - `ui-shell`: the worktree switching, unsaved-edit guard, live-resource guard and failure-recovery requirements move to git-worktree.nvim; workspace persistence isolation is restated as the configuration's participant contract; the theme picker also lists colorschemes provided by the vale plugin; a vale plugin wiring requirement is added.
-- `editing-experience`: multicursor line and rotation keys move to `<C-S-arrows>`.
+- `editing-experience`: multicursor line and rotation keys move to `<M-arrows>`.
 - `core-keymaps`: window resize on `<C-arrows>` becomes a specified core keymap.
 - `plugin-management`: install specs are declared per plugin module and collected by `pack.lua`; the user's own plugins are installed from their published GitHub repositories.
 
