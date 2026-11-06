@@ -57,9 +57,9 @@
 
 ## 8. Integration checks
 
-- [ ] 8.1 Fresh-machine check: start Neovim with empty temporary `XDG_DATA_HOME`/`XDG_STATE_HOME` and verify all plugins, including agentdiff, commitsmith, git-worktree and vale, are cloned from GitHub and startup has no errors
-- [ ] 8.2 Continuity check with the real state directories: verify existing sessions, pins, breakpoints, neo-tree state, prefs, commitsmith settings and the themery selection all survive the refactor
-- [ ] 8.3 Run `stylua --check` over the config and each plugin's `make fmt-check` and `make test`, and `openspec validate refactor-config-and-extract-plugins --strict`; verify all pass
+- [x] 8.1 Fresh-machine check: start Neovim with empty temporary `XDG_DATA_HOME`/`XDG_STATE_HOME` and verify all plugins, including agentdiff, commitsmith, git-worktree and vale, are cloned from GitHub and startup has no errors
+- [x] 8.2 Continuity check with the real state directories: verify existing sessions, pins, breakpoints, neo-tree state, prefs, commitsmith settings and the themery selection all survive the refactor
+- [x] 8.3 Run `stylua --check` over the config and each plugin's `make fmt-check` and `make test`, and `openspec validate refactor-config-and-extract-plugins --strict`; verify all pass
 
 ## Workflow follow-up
 
