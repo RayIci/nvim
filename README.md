@@ -175,12 +175,25 @@ instances stay in step. Lean mode is off by default; it drops the agent's tool s
 which is pure overhead when the diff is supplied inline. Note that `codex` emits no
 incremental output, so its replies arrive whole rather than streaming.
 
-Editing: multi-cursor `<C-n>` (skip with `q`), flash jump `s`, surround `ys/cs/ds`,
+Editing: multi-cursor `<C-n>` (skip with `q`), cursor above/below `<C-S-Up>`/`<C-S-Down>`,
+rotate cursors `<C-S-Left>`/`<C-S-Right>`, flash jump `s`, surround `ys/cs/ds`,
 references `]]`/`[[`, hunks `]h`/`[h`, inline AI (copilot.lua, sign in with
 `:Copilot auth`): accept line `<C-t>`, word `<C-w>`, all `<M-l>`, dismiss `<C-]>`,
 cycle `<M-]>`/`<M-[>` — `<C-w>` is a no-op without a suggestion, `<C-t>` falls back
 to its builtin (`<C-c>` acts as `<Esc>` so ghost text always clears).
 Escape insert with `jk`/`jj` (lag-free, insert-only — terminals unaffected).
 Save `<C-s>` (normal+insert), save without formatting `<C-a>`, clear search `<C-x>`/`<Esc>`, tmux-aware window
-navigation `<C-h/j/k/l>` (vim-tmux-navigator). Cmdline renders at the bottom row;
-macro recording shows a red `REC @reg` indicator in the statusline.
+navigation `<C-h/j/k/l>` (vim-tmux-navigator), window resize `<C-Up/Down/Left/Right>`.
+Cmdline renders at the bottom row; macro recording shows a red `REC @reg` indicator in
+the statusline.
+
+**Windows Terminal:** it binds `ctrl+shift+up`/`ctrl+shift+down` to scrolling by default,
+so they never reach Neovim. Unbind them in its `settings.json` (`"actions"` / keybindings):
+
+```json
+{ "id": null, "keys": "ctrl+shift+up" },
+{ "id": null, "keys": "ctrl+shift+down" }
+```
+
+To check a key reaches Neovim, press `<C-v>` then the key in insert mode: `<C-S-Up>`
+should appear as text.
