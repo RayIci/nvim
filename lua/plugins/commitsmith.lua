@@ -1,7 +1,6 @@
----commitsmith: AI commit messages with an interactive refinement window.
----The plugin lives in lua/commitsmith/ for now and is written to be moved to its
----own repository later; this module is the only place that knows about both the
----plugin and the rest of this configuration.
+---commitsmith: AI commit messages with an interactive refinement window
+---(RayIci/commitsmith.nvim). This module is the only place that knows about
+---both the plugin and the rest of this configuration.
 ---@class PluginCommitsmith
 local M = {}
 
@@ -12,18 +11,6 @@ function M.setup()
     -- nothing about.
     on_fallback = function(prompt)
       require("sidekick.cli").send({ prompt = prompt })
-    end,
-    -- One-time migration: carry over the harness and model chosen while commit
-    -- generation still lived in plugins/sidekick.lua.
-    seed = function()
-      local stored = require("config.prefs").get("sidekick_commit_generation", nil)
-      if type(stored) ~= "table" then
-        return nil
-      end
-      return {
-        harness = type(stored.tool) == "string" and stored.tool or nil,
-        models = type(stored.models) == "table" and stored.models or nil,
-      }
     end,
   })
 

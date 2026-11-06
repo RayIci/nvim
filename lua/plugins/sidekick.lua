@@ -1,5 +1,5 @@
 ---Sidekick: AI CLI sessions in a split, with a prompt library.
----Commit-message generation lives in lua/commitsmith/ (wired by
+---Commit-message generation lives in commitsmith (wired by
 ---plugins/commitsmith.lua); this module configures Sidekick only.
 ---@class PluginSidekick
 local M = {}
@@ -12,10 +12,10 @@ M.spec = {
 local has_tmux = vim.fn.executable("tmux") == 1
 
 ---The interactive commit prompt: handed to a live session, which fetches the
----staged diff with its own tools. Kept in sync with commitsmith's rules by
----commitsmith.prompt, which is the single source for them.
+---staged diff with its own tools. commitsmith owns the rules, so both paths
+---send the same request.
 local function commit_prompt()
-  return require("commitsmith.prompt").fallback()
+  return require("commitsmith").fallback_prompt()
 end
 
 function M.setup()
