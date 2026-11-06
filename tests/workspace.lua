@@ -1,4 +1,10 @@
--- Run with: nvim --headless -u NONE -l tests/worktrees.lua
+-- Run with: nvim --headless -u NONE -l tests/workspace.lua
+--
+-- The configuration's git-worktree wiring end to end: the plugin with its
+-- auto-session, neogit, dap, scope, bufferline and neo-tree integrations and
+-- this configuration's workspace participant, against the installed plugins.
+-- NVIM_WORKSPACE_TEST_GIT_WORKTREE points at a git-worktree.nvim checkout to
+-- test instead of the installed one.
 ---@diagnostic disable: duplicate-set-field
 local root = vim.fn.tempname()
 vim.fn.mkdir(root, "p")
@@ -23,8 +29,13 @@ vim.opt.rtp:prepend(config)
 vim.opt.swapfile = false
 vim.opt.shadafile = "NONE"
 
+local overrides = {
+  neogit = vim.env.NVIM_WORKSPACE_TEST_NEOGIT,
+  ["git-worktree.nvim"] = vim.env.NVIM_WORKSPACE_TEST_GIT_WORKTREE,
+}
 local function pack(name)
-  local path = (name == "neogit" and vim.env.NVIM_WORKTREE_TEST_NEOGIT)
+  local override = overrides[name]
+  local path = (override and override ~= "" and override)
     or vim.fn.globpath(vim.o.packpath, "pack/*/opt/" .. name)
   assert(path ~= "", "Missing installed test dependency: " .. name)
   vim.opt.rtp:append(path)
@@ -44,6 +55,7 @@ for _, name in ipairs({
   "telescope-ui-select.nvim",
   "telescope-fzf-native.nvim",
   "diffview.nvim",
+  "git-worktree.nvim",
 }) do
   pack(name)
 end
@@ -80,7 +92,7 @@ git(repo, "config", "user.name", "Worktree tests")
 vim.fn.writefile({ "first", "second", "third" }, repo .. "/file.txt")
 git(repo, "add", ".")
 git(repo, "commit", "-m", "initial")
-local worktrees = require("plugins.worktrees")
+local worktrees = require("git-worktree")
 vim.api.nvim_set_current_dir(repo)
 require("config.options")
 vim.o.undofile = false
@@ -170,7 +182,7 @@ local ok, failure = xpcall(function()
     assert(not vim.uv.fs_stat(repo .. ".worktrees"))
   end)
 
-  test("Neogit creates a branch without changing editor cwd", function()
+  test("creating a branch does not change editor cwd", function()
     local ctx = worktrees.discover()
     local tree = worktrees.create_checkout(ctx, { kind = "new", name = "feature/login", ref = "" }, linked)
     equal(linked, tree.path)
@@ -192,7 +204,7 @@ local ok, failure = xpcall(function()
     vim.fn.delete(linked .. "/subdir", "d")
   end)
 
-  test("creation uses linked HEAD instead of Neogit's old repository", function()
+  test("creation uses the linked checkout's HEAD, not Neogit's old repository", function()
     vim.api.nvim_set_current_dir(linked)
     vim.fn.writefile({ "linked commit" }, linked .. "/linked.txt")
     git(linked, "add", ".")
@@ -323,7 +335,7 @@ local ok, failure = xpcall(function()
   require("plugins.telescope").setup()
   require("plugins.auto-session").setup()
   require("config.workspace").setup()
-  require("plugins.worktrees").setup()
+  require("plugins.git-worktree").setup()
   local workspace = require("config.workspace")
   local persistence = require("config.workspace")
   local session = require("auto-session")
@@ -919,7 +931,7 @@ local ok, failure = xpcall(function()
     local function startup(args, disabled, open_file)
       local output = root .. "/startup-result.json"
       vim.fn.delete(output)
-      local command = { vim.v.progpath, "--headless", "-u", config .. "/tests/worktree-startup.lua" }
+      local command = { vim.v.progpath, "--headless", "-u", config .. "/tests/workspace-startup.lua" }
       vim.list_extend(command, args)
       local result = vim
         .system(command, {
@@ -927,11 +939,12 @@ local ok, failure = xpcall(function()
           text = true,
           env = {
             AUTOSESSION_UNIT_TESTING = "1",
-            NVIM_WORKTREE_TEST_CONFIG = config,
-            NVIM_WORKTREE_TEST_PACKPATH = vim.o.packpath,
-            NVIM_WORKTREE_TEST_RESULT = output,
-            NVIM_WORKTREE_TEST_DISABLED = disabled and "1" or "",
-            NVIM_WORKTREE_TEST_OPEN_FILE = open_file or "",
+            NVIM_WORKSPACE_TEST_CONFIG = config,
+            NVIM_WORKSPACE_TEST_PACKPATH = vim.o.packpath,
+            NVIM_WORKSPACE_TEST_GIT_WORKTREE = vim.env.NVIM_WORKSPACE_TEST_GIT_WORKTREE or "",
+            NVIM_WORKSPACE_TEST_RESULT = output,
+            NVIM_WORKSPACE_TEST_DISABLED = disabled and "1" or "",
+            NVIM_WORKSPACE_TEST_OPEN_FILE = open_file or "",
           },
         })
         :wait(15000)
@@ -1082,4 +1095,4 @@ vim.fn.delete(root, "rf")
 if not ok then
   error(failure)
 end
-print(("Passed %d worktree tests"):format(count))
+print(("Passed %d workspace tests"):format(count))

@@ -10,8 +10,7 @@
 ---
 ---Restore: breakpoints per file on BufReadPost; buffers, pins, scope and the
 ---explorer are reconciled against the possibly stale auto-session file by the
----session hooks below. Workspace transitions (git worktree switches) drive
----pause/flush/restore_workspace/reset_workspace/resume.
+---session hooks below. Git worktree switches drive it through M.participant.
 ---@class Workspace
 local M = {}
 
@@ -112,12 +111,26 @@ function M.restore_workspace(managed)
   explorer.restore(managed)
 end
 
----Clear explorer and pin state before the editor is torn down for another
----workspace.
-function M.reset_workspace()
-  explorer.reset()
-  pins.reset()
-end
+---git-worktree participant: switches pause and flush this state for the
+---outgoing workspace and restore it for the destination. Resetting neo-tree,
+---pins, scope and breakpoints is done by the plugin's integrations. Functions
+---are looked up on M at call time.
+---@type GitWorktreeParticipant
+M.participant = {
+  name = "workspace",
+  pause = function()
+    M.pause()
+  end,
+  flush = function()
+    M.flush()
+  end,
+  restore = function()
+    M.restore_workspace(true)
+  end,
+  resume = function()
+    M.resume()
+  end,
+}
 
 ---auto-session hooks (pre_save_cmds, pre_restore_cmds, post_restore_cmds).
 M.session = {

@@ -48,15 +48,6 @@ function M.sync()
   require("bufferline.ui").refresh()
 end
 
----Forget every pin (workspace reset).
-function M.reset()
-  local groups = require("bufferline.groups")
-  for _, buf in ipairs(vim.api.nvim_list_bufs()) do
-    groups.remove_id_from_manual_groupings(buf)
-  end
-  M.seed("")
-end
-
 function M.setup()
   -- A wiped buffer must not linger in bufferline's manual groupings.
   vim.api.nvim_create_autocmd("BufWipeout", {

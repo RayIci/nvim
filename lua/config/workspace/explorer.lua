@@ -140,18 +140,6 @@ function M.restore(managed)
   end
 end
 
----Close neo-tree and drop its per-tab source state (workspace reset).
-function M.reset()
-  local manager = require("neo-tree.sources.manager")
-  manager.close_all()
-  manager.dispose_invalid_tabs()
-  for _, tab in ipairs(vim.api.nvim_list_tabpages()) do
-    for _, name in ipairs({ "filesystem", "buffers", "git_status" }) do
-      manager.dispose(name, tab)
-    end
-  end
-end
-
 ---Register the save triggers. Must run before auto-session.setup(): this
 ---VimLeavePre has to fire first, while the tree window still exists, and it
 ---raises the exiting flag so auto-session's window teardown for :mksession

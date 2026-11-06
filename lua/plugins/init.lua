@@ -60,7 +60,7 @@ M.modules = {
   "neotree",
   "oil",
   "auto-session",
-  "worktrees",
+  "git-worktree",
 
   -- Editing QoL
   "surround",

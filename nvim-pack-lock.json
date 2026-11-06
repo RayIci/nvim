@@ -89,6 +89,10 @@
       "rev": "a1badcd070d176172940eb55d9d59029dad1c5a6",
       "src": "https://github.com/akinsho/git-conflict.nvim"
     },
+    "git-worktree.nvim": {
+      "rev": "ff9ea593865510fbb9efec14acfa9f1caff40f61",
+      "src": "https://github.com/RayIci/git-worktree.nvim"
+    },
     "github-nvim-theme": {
       "rev": "c106c9472154d6b2c74b74565616b877ae8ed31d",
       "src": "https://github.com/projekt0n/github-nvim-theme"

@@ -19,7 +19,7 @@ function M.setup()
       popup = { ["w"] = false },
       status = {
         ["w"] = function()
-          require("plugins.worktrees").menu()
+          require("git-worktree").menu()
         end,
       },
     },

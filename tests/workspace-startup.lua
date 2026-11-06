@@ -1,6 +1,6 @@
--- Child init for worktrees.lua: exercise real startup without loading/installing unrelated plugins.
-vim.opt.rtp:prepend(assert(vim.env.NVIM_WORKTREE_TEST_CONFIG))
-vim.o.packpath = assert(vim.env.NVIM_WORKTREE_TEST_PACKPATH)
+-- Child init for tests/workspace.lua: real startup without loading or installing unrelated plugins.
+vim.opt.rtp:prepend(assert(vim.env.NVIM_WORKSPACE_TEST_CONFIG))
+vim.o.packpath = assert(vim.env.NVIM_WORKSPACE_TEST_PACKPATH)
 for _, name in ipairs({
   "plenary.nvim",
   "scope.nvim",
@@ -19,6 +19,13 @@ for _, name in ipairs({
   assert(path ~= "", "Missing startup dependency: " .. name)
   vim.opt.rtp:append(path)
 end
+-- git-worktree.nvim: an explicit checkout (NVIM_WORKSPACE_TEST_GIT_WORKTREE) or the installed plugin.
+local plugin = vim.env.NVIM_WORKSPACE_TEST_GIT_WORKTREE
+if not plugin or plugin == "" then
+  plugin = vim.fn.globpath(vim.o.packpath, "pack/*/opt/git-worktree.nvim")
+end
+assert(plugin ~= "", "Missing startup dependency: git-worktree.nvim")
+vim.opt.rtp:append(plugin)
 require("config.options")
 vim.o.swapfile = false
 vim.o.undofile = false
@@ -30,8 +37,8 @@ require("plugins.telescope").setup()
 require("plugins.auto-session").setup()
 require("dap")
 require("config.workspace").setup()
-if vim.env.NVIM_WORKTREE_TEST_DISABLED ~= "1" then
-  require("plugins.worktrees").setup()
+if vim.env.NVIM_WORKSPACE_TEST_DISABLED ~= "1" then
+  require("plugins.git-worktree").setup()
 end
 
 vim.api.nvim_create_autocmd("VimEnter", {
@@ -44,8 +51,8 @@ vim.api.nvim_create_autocmd("VimEnter", {
           buffers_before_open[#buffers_before_open + 1] = vim.api.nvim_buf_get_name(buf)
         end
       end
-      if vim.env.NVIM_WORKTREE_TEST_OPEN_FILE and vim.env.NVIM_WORKTREE_TEST_OPEN_FILE ~= "" then
-        vim.cmd.edit(vim.fn.fnameescape(vim.env.NVIM_WORKTREE_TEST_OPEN_FILE))
+      if vim.env.NVIM_WORKSPACE_TEST_OPEN_FILE and vim.env.NVIM_WORKSPACE_TEST_OPEN_FILE ~= "" then
+        vim.cmd.edit(vim.fn.fnameescape(vim.env.NVIM_WORKSPACE_TEST_OPEN_FILE))
       end
       local tabs = {}
       for _, tab in ipairs(vim.api.nvim_list_tabpages()) do
@@ -78,7 +85,7 @@ vim.api.nvim_create_autocmd("VimEnter", {
         session = vim.v.this_session,
         managed_mapping = vim.fn.maparg("<leader>gww", "n") ~= "",
       }
-      vim.fn.writefile({ vim.json.encode(result) }, assert(vim.env.NVIM_WORKTREE_TEST_RESULT))
+      vim.fn.writefile({ vim.json.encode(result) }, assert(vim.env.NVIM_WORKSPACE_TEST_RESULT))
       require("config.workspace").pause()
       require("auto-session.config").auto_save = false
       vim.cmd("qa!")
