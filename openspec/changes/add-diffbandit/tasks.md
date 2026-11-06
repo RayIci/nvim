@@ -38,15 +38,15 @@
 - [x] 3.1 Add `M.close_all()` to `lua/plugins/diffbandit.lua`. It returns at once when `package.loaded.diffbandit` is nil. Otherwise, for every tab where `require("diffbandit").is_running({ tab = t, panel = true })`, it makes the tab current and calls `close()`, then returns to the starting tab if it still exists. Verify headlessly:
   - With a diff view in one tab and a standalone commit panel in another, both close and the remaining tabs are untouched.
   - In a fresh start where diffbandit was never opened, `close_all()` leaves `package.loaded.diffbandit` nil.
-- [ ] 3.2 Add `M.participant = { name = "diffbandit", check = M.close_all }`. In `lua/plugins/git-worktree.lua`, register it right after the workspace participant. Verify in a headless switch between two worktrees of a temporary repository, using the installed git-worktree.nvim and auto-session the way `tests/workspace.lua` does:
+- [x] 3.2 Add `M.participant = { name = "diffbandit", check = M.close_all }`. In `lua/plugins/git-worktree.lua`, register it right after the workspace participant. Verify in a headless switch between two worktrees of a temporary repository, using the installed git-worktree.nvim and auto-session the way `tests/workspace.lua` does:
   - With a view open, the switch completes, and the outgoing session file has no `diffbandit` buffer names.
   - With a typed but uncommitted commit-panel message and another modified buffer, "Save all and switch" creates no commit (`git rev-parse HEAD` unchanged), and reopening the commit panel in that repository restores the message.
   - A cancelled switch leaves the workspace where it was and the view closed.
-- [ ] 3.3 Add `M.close_on_exit()`, which calls `close_all()` only when `vim.v.exiting ~= vim.NIL`. Append it to `pre_save_cmds` in `lua/plugins/auto-session.lua`, after `workspace.session.pre_save`. Verify headlessly:
+- [x] 3.3 Add `M.close_on_exit()`, which calls `close_all()` only when `vim.v.exiting ~= vim.NIL`. Append it to `pre_save_cmds` in `lua/plugins/auto-session.lua`, after `workspace.session.pre_save`. Verify headlessly:
   - With a view open, `:AutoSession save` leaves the view open.
   - Quitting with a view open writes a session file with no `diffbandit` buffer names.
   - Restoring that session gives the normal tabs only.
-- [ ] 3.4 Turn the checks from 2.1 to 3.3 into `tests/diffbandit.lua`. It runs as `nvim --headless -u NONE -l tests/diffbandit.lua` against the installed plugins, in temporary XDG directories, following `tests/workspace.lua`. Verify it passes, and that `tests/workspace.lua`, `tests/workspace-startup.lua`, `tests/state.lua` and `tests/plugin-modules.lua` still pass.
+- [x] 3.4 Turn the checks from 2.1 to 3.3 into `tests/diffbandit.lua`. It runs as `nvim --headless -u NONE -l tests/diffbandit.lua` against the installed plugins, in temporary XDG directories, following `tests/workspace.lua`. Verify it passes, and that `tests/workspace.lua` (which also starts `tests/workspace-startup.lua` as its child init), `tests/state.lua` and `tests/plugin-modules.lua` still pass.
 
 ## 4. Documentation
 
