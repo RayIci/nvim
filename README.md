@@ -156,6 +156,19 @@ return M
 level. `nvim --headless -u NONE -l tests/plugin-modules.lua` checks that. Language-pack
 plugins stay in their pack's `packs` field.
 
+## Own plugins
+
+These live in their own repositories and are installed by vim.pack like any other plugin
+(pinned in `nvim-pack-lock.json`); this configuration only wires them up:
+
+| Plugin | Wired by |
+|---|---|
+| [agentdiff.nvim](https://github.com/RayIci/agentdiff.nvim) | `lua/plugins/agentdiff.lua` |
+| [commitsmith.nvim](https://github.com/RayIci/commitsmith.nvim) | `lua/plugins/commitsmith.lua` |
+
+To try unpublished edits, start Neovim with the checkout first on `runtimepath`:
+`nvim --cmd 'set rtp^=~/Github/commitsmith.nvim'`.
+
 ## Plugin updates
 
 `<leader>pu` (or `:lua vim.pack.update()`) → review buffer → `:write` to apply, `:quit`
@@ -183,9 +196,8 @@ to discard. `nvim-pack-lock.json` is committed; treat it like a lockfile.
 
 ### Commit messages
 
-Commit-message generation lives in `lua/commitsmith/` — a self-contained plugin kept in this
-repo for now, wired by `lua/plugins/commitsmith.lua`. Everything runs through
-`:Commitsmith <subcommand>`:
+Commit-message generation comes from [commitsmith.nvim](https://github.com/RayIci/commitsmith.nvim),
+wired by `lua/plugins/commitsmith.lua`. Everything runs through `:Commitsmith <subcommand>`:
 
 | Subcommand | What it does |
 |---|---|

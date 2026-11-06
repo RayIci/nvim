@@ -41,6 +41,10 @@
       "rev": "ea92773e84c0ad3288c3bc5e452ac91559669087",
       "src": "https://github.com/rcarriga/cmp-dap"
     },
+    "commitsmith.nvim": {
+      "rev": "abd486e518600661369fb175ef4407aa24c852c1",
+      "src": "https://github.com/RayIci/commitsmith.nvim"
+    },
     "conform.nvim": {
       "rev": "619363c30309d29ffa631e67c8183f2a72caa373",
       "src": "https://github.com/stevearc/conform.nvim"

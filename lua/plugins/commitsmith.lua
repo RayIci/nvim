@@ -4,6 +4,11 @@
 ---@class PluginCommitsmith
 local M = {}
 
+---@type (string|PackSpec)[]
+M.spec = {
+  "RayIci/commitsmith.nvim",
+}
+
 function M.setup()
   require("commitsmith").setup({
     -- Outside a gitcommit buffer the prompt goes to whatever Sidekick session is

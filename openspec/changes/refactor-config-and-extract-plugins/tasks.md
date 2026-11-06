@@ -34,8 +34,8 @@
 - [x] 5.2 Remove the `seed` option and `settings.seed()`, and add the public `fallback_prompt()`; verify with tests that both prompts carry the shared rules, settings are re-read on each access, a missing harness errors without fallback, and generation outside a commit buffer calls the fallback or reports the no-fallback error (`make test`)
 - [x] 5.3 Initialise `openspec/` in the repository and seed `openspec/specs/commit-message-ai/spec.md` from this config's spec (wording adapted to the plugin); verify `openspec validate --specs --strict` passes there
 - [x] 5.4 Point `lua/plugins/commitsmith.lua` (no `seed`) and `lua/plugins/sidekick.lua` (`fallback_prompt()`) at the public API and run the config with `--cmd 'set rtp^=~/Github/commitsmith.nvim'` with `lua/commitsmith/` moved aside; verify `<leader>am`, `<leader>aM`, `<leader>ac` and the Sidekick fallback work and existing settings are kept
-- [ ] 5.5 Review the repository for personal paths, tokens or work data, then (after the user confirms) create and push `RayIci/commitsmith.nvim` as a public repository; verify `gh repo view RayIci/commitsmith.nvim` shows it public with the pushed commit
-- [ ] 5.6 Add `RayIci/commitsmith.nvim` to the commitsmith module's spec, delete `lua/commitsmith/`, let vim.pack install it and update the README commit-message section; verify a headless startup with no local override loads the published plugin and the lockfile has its revision
+- [x] 5.5 Review the repository for personal paths, tokens or work data, then (after the user confirms) create and push `RayIci/commitsmith.nvim` as a public repository; verify `gh repo view RayIci/commitsmith.nvim` shows it public with the pushed commit
+- [x] 5.6 Add `RayIci/commitsmith.nvim` to the commitsmith module's spec, delete `lua/commitsmith/`, let vim.pack install it and update the README commit-message section; verify a headless startup with no local override loads the published plugin and the lockfile has its revision
 
 ## 6. git-worktree.nvim
 
