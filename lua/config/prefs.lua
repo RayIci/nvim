@@ -1,8 +1,11 @@
 ---Persisted user preferences (small key/value store).
----Write-through JSON at stdpath('state')/prefs.json. First consumer: the
----rainbow-brackets toggle; reuse for any switch that must survive restarts.
+---Write-through JSON at stdpath('state')/prefs.json, used by toggles that must
+---survive restarts (rainbow brackets, format-on-save, live diagnostics, DAP
+---virtual text, the SQL formatter dialect). An unreadable file starts from empty.
 ---@class Prefs
 local M = {}
+
+local state = require("config.state")
 
 ---@type string
 local path = vim.fs.joinpath(vim.fn.stdpath("state") --[[@as string]], "prefs.json")
@@ -12,23 +15,15 @@ local cache = nil
 
 ---@return table<string, any>
 local function load()
-  if cache then
-    return cache
+  if not cache then
+    local ok, data = pcall(state.read, path, {})
+    cache = (ok and type(data) == "table") and data or {}
   end
-  local ok, data = pcall(function()
-    local lines = vim.fn.readfile(path)
-    return vim.json.decode(table.concat(lines, "\n"))
-  end)
-  cache = (ok and type(data) == "table") and data or {}
   return cache
 end
 
 local function save()
-  local dir = vim.fs.dirname(path)
-  if vim.fn.isdirectory(dir) == 0 then
-    vim.fn.mkdir(dir, "p")
-  end
-  vim.fn.writefile({ vim.json.encode(cache) }, path)
+  state.write(path, cache)
 end
 
 ---Get a preference value.
