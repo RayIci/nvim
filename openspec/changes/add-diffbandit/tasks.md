@@ -59,7 +59,7 @@
 
 ## 5. Integration checks
 
-- [ ] 5.1 Run `stylua --check` (`~/.local/share/nvim/mason/bin/stylua`) on the changed Lua files and `openspec validate add-diffbandit --strict`. Do a fresh-machine start with empty temporary `XDG_DATA_HOME`/`XDG_STATE_HOME` and verify diffbandit is cloned at the locked revision with no startup errors. Verify all pass.
+- [x] 5.1 Run `stylua --check` (`~/.local/share/nvim/mason/bin/stylua`) on the changed Lua files and `openspec validate add-diffbandit --strict`. Do a fresh-machine start with empty temporary `XDG_DATA_HOME`/`XDG_STATE_HOME` and verify diffbandit is cloned at the locked revision with no startup errors. Verify all pass.
 
 ## Workflow follow-up
 
