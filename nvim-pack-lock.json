@@ -392,6 +392,10 @@
       "rev": "bd67efe408d4816e25e8491cc5ad4088e708a69a",
       "src": "https://github.com/folke/trouble.nvim"
     },
+    "vale.nvim": {
+      "rev": "67e2c9ea54c4ba390e3dfa3c42129cc35d25e879",
+      "src": "https://github.com/RayIci/vale.nvim"
+    },
     "venv-selector.nvim": {
       "rev": "cc4bb3975de8835291f9bb45889e96c6b2795fc4",
       "src": "https://github.com/linux-cultist/venv-selector.nvim"

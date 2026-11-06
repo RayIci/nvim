@@ -46,6 +46,7 @@ M.modules = {
   "grug-far",
 
   -- UI
+  "vale",
   "theme",
   "snacks",
   "whichkey",
