@@ -2,8 +2,8 @@
 
 ## 1. Install diffbandit
 
-- [ ] 1.1 Create `lua/plugins/diffbandit.lua` with `M.spec = { { src = "CoreyKaylor/diffbandit.nvim", version = vim.version.range("0") } }` and a `setup()` that calls `require("diffbandit").setup()`. Add `"diffbandit"` to `M.modules` in `lua/plugins/init.lua` after `"diffview"`. Verify with `nvim --headless -u NONE -l tests/plugin-modules.lua`.
-- [ ] 1.2 Start Neovim once so vim.pack installs it. Verify that `nvim-pack-lock.json` gains a `diffbandit.nvim` entry whose revision is the `v0.3.0` tag's commit (`git ls-remote https://github.com/CoreyKaylor/diffbandit.nvim v0.3.0`), and that a clean headless start exits 0 with no errors.
+- [x] 1.1 Create `lua/plugins/diffbandit.lua` with `M.spec = { { src = "CoreyKaylor/diffbandit.nvim", version = vim.version.range("0") } }` and a `setup()` that calls `require("diffbandit").setup()`. Add `"diffbandit"` to `M.modules` in `lua/plugins/init.lua` after `"diffview"`. Verify with `nvim --headless -u NONE -l tests/plugin-modules.lua`.
+- [x] 1.2 Start Neovim once so vim.pack installs it. Verify that `nvim-pack-lock.json` gains a `diffbandit.nvim` entry whose revision is the `v0.3.0` tag's commit (`git ls-remote https://github.com/CoreyKaylor/diffbandit.nvim v0.3.0`), and that a clean headless start exits 0 with no errors.
 
 ## 2. Options and keymaps
 

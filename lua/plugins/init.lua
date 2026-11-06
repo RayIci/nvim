@@ -35,6 +35,7 @@ M.modules = {
   "gitsigns",
   "lazygit",
   "diffview",
+  "diffbandit",
   "neogit",
   "octo",
   "git-conflict",
