@@ -9,6 +9,11 @@
 ---@class PluginCopilot
 local M = {}
 
+---@type (string|PackSpec)[]
+M.spec = {
+  "zbirenbaum/copilot.lua",
+}
+
 ---Nudge once if no credentials exist yet (new SQLite scheme or legacy JSON).
 local function warn_if_signed_out()
   local config_home = vim.env.XDG_CONFIG_HOME or vim.fs.joinpath(vim.env.HOME or "", ".config")

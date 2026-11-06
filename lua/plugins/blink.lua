@@ -3,6 +3,14 @@
 ---@class PluginBlink
 local M = {}
 
+---@type (string|PackSpec)[]
+M.spec = {
+  { src = "Saghen/blink.cmp", version = vim.version.range("1") },
+  "Saghen/blink.compat",
+  "rcarriga/cmp-dap",
+  "rafamadriz/friendly-snippets",
+}
+
 ---VSCode-style kind icons (nerd font codicons).
 ---@type table<string, string>
 local kind_icons = {

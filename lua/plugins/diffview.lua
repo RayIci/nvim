@@ -2,6 +2,11 @@
 ---@class PluginDiffview
 local M = {}
 
+---@type (string|PackSpec)[]
+M.spec = {
+  "sindrets/diffview.nvim",
+}
+
 function M.setup()
   require("diffview").setup()
 

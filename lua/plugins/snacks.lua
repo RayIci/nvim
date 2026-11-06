@@ -1,6 +1,11 @@
 ---@class PluginSnacks
 local M = {}
 
+---@type (string|PackSpec)[]
+M.spec = {
+  "folke/snacks.nvim",
+}
+
 function M.setup()
   require("snacks").setup({
     notifier = {

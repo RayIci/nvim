@@ -3,6 +3,11 @@
 ---@class PluginAutopairs
 local M = {}
 
+---@type (string|PackSpec)[]
+M.spec = {
+  "windwp/nvim-autopairs",
+}
+
 function M.setup()
   require("nvim-autopairs").setup({
     check_ts = true,

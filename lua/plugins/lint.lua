@@ -5,6 +5,11 @@
 ---@class PluginLint
 local M = {}
 
+---@type (string|PackSpec)[]
+M.spec = {
+  "mfussenegger/nvim-lint",
+}
+
 function M.setup() end
 
 ---@param linters_by_ft table<string, string[]> from the merged language packs

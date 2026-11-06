@@ -4,6 +4,11 @@
 ---@class PluginSidekick
 local M = {}
 
+---@type (string|PackSpec)[]
+M.spec = {
+  "folke/sidekick.nvim",
+}
+
 local has_tmux = vim.fn.executable("tmux") == 1
 
 ---The interactive commit prompt: handed to a live session, which fetches the

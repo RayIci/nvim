@@ -4,6 +4,11 @@
 ---@class PluginRenderMarkdown
 local M = {}
 
+---@type (string|PackSpec)[]
+M.spec = {
+  "MeanderingProgrammer/render-markdown.nvim",
+}
+
 ---blink reuses one buffer for its docs window while cycling candidates, so a
 ---FileType hook alone renders only the first candidate. Attach a listener that
 ---re-renders on every content change (debounced second pass for late edits).

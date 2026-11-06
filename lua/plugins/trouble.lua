@@ -2,6 +2,11 @@
 ---@class PluginTrouble
 local M = {}
 
+---@type (string|PackSpec)[]
+M.spec = {
+  "folke/trouble.nvim",
+}
+
 function M.setup()
   require("trouble").setup({
     modes = {

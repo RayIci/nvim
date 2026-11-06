@@ -2,6 +2,11 @@
 ---@class PluginGitsigns
 local M = {}
 
+---@type (string|PackSpec)[]
+M.spec = {
+  "lewis6991/gitsigns.nvim",
+}
+
 function M.setup()
   require("gitsigns").setup({
     on_attach = function(bufnr)

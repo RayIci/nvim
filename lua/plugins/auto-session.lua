@@ -8,6 +8,11 @@
 ---@class PluginAutoSession
 local M = {}
 
+---@type (string|PackSpec)[]
+M.spec = {
+  "rmagatti/auto-session",
+}
+
 ---Persisted neo-tree explorer state for one project.
 ---@class NeotreeSessionState
 ---@field nodes string[] ids (paths) of expanded directories

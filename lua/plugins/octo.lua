@@ -5,6 +5,12 @@
 ---@class PluginOcto
 local M = {}
 
+---@type (string|PackSpec)[]
+M.spec = {
+  -- pinned to the old-config commit — newer versions are bugged.
+  { src = "pwntester/octo.nvim", version = "7566ab21843bf0de721f72891733c0372738d3ee" },
+}
+
 function M.setup()
   require("octo").setup({
     picker = "telescope",

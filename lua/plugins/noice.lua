@@ -4,6 +4,11 @@
 ---@class PluginNoice
 local M = {}
 
+---@type (string|PackSpec)[]
+M.spec = {
+  "folke/noice.nvim",
+}
+
 function M.setup()
   require("noice").setup({
     lsp = {

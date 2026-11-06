@@ -18,6 +18,11 @@
 ---@class PluginVisualMulti
 local M = {}
 
+---@type (string|PackSpec)[]
+M.spec = {
+  { src = "jake-stewart/multicursor.nvim", version = "1.0" },
+}
+
 function M.setup()
   local mc = require("multicursor-nvim")
   mc.setup()

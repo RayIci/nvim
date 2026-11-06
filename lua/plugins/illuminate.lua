@@ -3,6 +3,11 @@
 ---@class PluginIlluminate
 local M = {}
 
+---@type (string|PackSpec)[]
+M.spec = {
+  "RRethy/vim-illuminate",
+}
+
 function M.setup()
   require("illuminate").configure({
     providers = { "lsp", "treesitter", "regex" },

@@ -10,7 +10,7 @@ if vim.g.vscode then
 end
 
 require("config.pack")
-require("plugins")
+require("plugins").setup()
 require("config.clipboard") -- after plugins so its startup notify renders via noice
 require("langs").setup()
 require("config.keymaps")

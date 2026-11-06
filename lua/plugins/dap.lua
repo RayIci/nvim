@@ -6,6 +6,13 @@
 ---@class PluginDap
 local M = {}
 
+---@type (string|PackSpec)[]
+M.spec = {
+  "mfussenegger/nvim-dap",
+  "rcarriga/nvim-dap-ui",
+  "theHamsta/nvim-dap-virtual-text",
+}
+
 ---Write all modified buffers before launching/continuing a session.
 local function save_all_buffers()
   vim.cmd("silent! wall")

@@ -2,6 +2,12 @@
 ---@class PluginFolding
 local M = {}
 
+---@type (string|PackSpec)[]
+M.spec = {
+  "kevinhwang91/nvim-ufo",
+  "kevinhwang91/promise-async",
+}
+
 local ft_provider = {
   git = "",
 }

@@ -2,6 +2,12 @@
 ---@class PluginMason
 local M = {}
 
+---@type (string|PackSpec)[]
+M.spec = {
+  "mason-org/mason.nvim",
+  "WhoIsSethDaniel/mason-tool-installer.nvim",
+}
+
 function M.setup()
   require("mason").setup()
 end

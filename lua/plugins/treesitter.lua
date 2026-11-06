@@ -4,6 +4,12 @@
 ---@class PluginTreesitter
 local M = {}
 
+---@type (string|PackSpec)[]
+M.spec = {
+  { src = "nvim-treesitter/nvim-treesitter", version = "main" },
+  "LiadOz/nvim-dap-repl-highlights",
+}
+
 function M.setup()
   -- Registers the dap_repl parser source; must run before nvim-treesitter
   -- installs parsers and before dap.repl loads (old-config order).

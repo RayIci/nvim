@@ -2,6 +2,11 @@
 ---@class PluginFlash
 local M = {}
 
+---@type (string|PackSpec)[]
+M.spec = {
+  "folke/flash.nvim",
+}
+
 function M.setup()
   require("flash").setup({})
 

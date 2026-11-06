@@ -2,6 +2,11 @@
 ---@class PluginTodoComments
 local M = {}
 
+---@type (string|PackSpec)[]
+M.spec = {
+  "folke/todo-comments.nvim",
+}
+
 function M.setup()
   require("todo-comments").setup({})
 

@@ -3,6 +3,11 @@
 ---@class PluginNeogit
 local M = {}
 
+---@type (string|PackSpec)[]
+M.spec = {
+  "NeogitOrg/neogit",
+}
+
 function M.setup()
   require("neogit").setup({
     kind = "floating",

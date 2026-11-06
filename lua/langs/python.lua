@@ -43,6 +43,7 @@ return {
   end,
   mason = { "basedpyright", "ruff", "mypy", "debugpy" },
   packs = {
+    { src = "mfussenegger/nvim-dap-python" },
     { src = "linux-cultist/venv-selector.nvim" },
     { src = "Vimjas/vim-python-pep8-indent" },
     {

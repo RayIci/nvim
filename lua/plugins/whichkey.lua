@@ -2,6 +2,11 @@
 ---@class PluginWhichKey
 local M = {}
 
+---@type (string|PackSpec)[]
+M.spec = {
+  "folke/which-key.nvim",
+}
+
 function M.setup()
   local wk = require("which-key")
   wk.setup({
