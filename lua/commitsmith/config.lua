@@ -18,7 +18,6 @@ local M = {}
 ---@field apply "auto"|"manual" replace the commit message on every revision, or on accept
 ---@field window CommitsmithWindowOpts
 ---@field on_fallback fun(prompt: string)? called for `generate` outside a gitcommit buffer
----@field seed fun(): CommitsmithStoredSettings? one-time settings seed, for migrations
 
 ---@type CommitsmithOpts
 local defaults = {
@@ -34,7 +33,6 @@ local defaults = {
     border = "rounded",
   },
   on_fallback = nil,
-  seed = nil,
 }
 
 ---@type CommitsmithOpts

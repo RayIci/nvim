@@ -145,7 +145,6 @@ local names = { "generate", "chat", "harness", "model", "lean", "stop", "clear",
 ---@param opts CommitsmithOpts?
 function M.setup(opts)
   config.setup(opts)
-  settings.seed()
 
   vim.api.nvim_create_user_command("Commitsmith", function(args)
     local name = args.fargs[1] or "generate"
@@ -172,6 +171,14 @@ end
 -- Public surface, for host keymaps.
 M.generate = generate
 M.harness = select_harness
+
+---The prompt `generate` hands to `on_fallback`: the shared Conventional
+---Commits rules plus an instruction to read the staged diff, for hosts that
+---send it to an interactive agent themselves.
+---@return string
+function M.fallback_prompt()
+  return prompt.fallback()
+end
 
 ---@param name string?
 function M.model(name)

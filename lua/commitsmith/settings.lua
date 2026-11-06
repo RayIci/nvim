@@ -54,41 +54,6 @@ function M.is_empty()
   return next(read()) == nil
 end
 
----Seed the store once, from `opts.seed`, when no harness has been chosen yet.
----Used to carry an existing choice across the extraction from another module.
-function M.seed()
-  local seed = config.options.seed
-  if type(seed) ~= "function" or read().harness then
-    return
-  end
-
-  local ok, value = pcall(seed)
-  if not ok or type(value) ~= "table" then
-    return
-  end
-
-  local harness = require("commitsmith.harness")
-  local stored = read()
-  if type(value.harness) == "string" and harness.get(value.harness) then
-    stored.harness = value.harness
-  end
-  if type(value.models) == "table" then
-    stored.models = stored.models or {}
-    for name, model in pairs(value.models) do
-      -- Only carry over a model this plugin still offers. A seeded id is a
-      -- historical default, not a deliberate custom choice, and an id that has
-      -- since been retired fails the generation outright rather than degrading.
-      if type(model) == "string" and harness.model(name, model) then
-        stored.models[name] = model
-      end
-    end
-  end
-  if type(value.lean) == "boolean" then
-    stored.lean = value.lean
-  end
-  write(stored)
-end
-
 ---@return string name of the active harness; the configured default when unset
 ---or no longer known
 function M.harness()
