@@ -54,7 +54,8 @@ lua/config/pack.lua       the one vim.pack installer + shared libraries
 lua/config/keymaps.lua    global keymaps
 lua/config/autocmds.lua   global autocmds
 lua/config/prefs.lua      persisted preferences (JSON in stdpath state)
-lua/config/workspace.lua  plugin-free session/breakpoint/pin persistence
+lua/config/state.lua      shared JSON state files + debounced, transition-aware saver
+lua/config/workspace/     per-project workspace persistence (buffers, breakpoints, pins, explorer, scope)
 lua/plugins/<name>.lua    one plugin per file: install spec (M.spec) + setup + its keymaps
 lua/plugins/init.lua      ordered list of plugin modules (setup order)
 lua/langs/<lang>.lua      drop-in language packs
@@ -68,11 +69,17 @@ automatically when Neovim starts with no file arguments (buffers, layout, and bu
 pins — pins ride in the session via the `globals` sessionoption plus a post-restore
 re-sync). Neo-tree's expanded folders and open/closed state persist beside the session
 and are reapplied on restore. DAP breakpoints (line/condition/log) persist separately to
-`stdpath('state')` via the workspace module and reappear per file on open, session or not.
+`stdpath('state')` via the workspace package and reappear per file on open, session or not.
 
 Buffers, pins, breakpoints, and explorer state also save at mutation time (debounced),
-so they survive `:restart` without relying on exit hooks. The existing locations remain
-`stdpath('state')/workspaces/<cwd-key>.json` and `stdpath('state')/neotree/<cwd-key>.json`.
+so they survive `:restart` without relying on exit hooks. They live in
+`stdpath('state')/workspaces/<cwd-key>.json` (buffers, pins, breakpoints) and
+`stdpath('state')/neotree/<cwd-key>.json` (explorer); scope.nvim's per-tab buffer lists ride
+in the session file. `lua/config/workspace/` has one module per concern (`buffers`,
+`breakpoints`, `pins`, `explorer`, `scope`); `lua/plugins/auto-session.lua` only sets up
+auto-session with the package's session hooks. Both state files are written through
+`lua/config/state.lua`, which drops a pending write when the directory changes or a
+transition pauses persistence.
 Managed transitions flush the source snapshots and invalidate pending saves/restores
 before resetting editor state. Existing empty snapshots clear stale state; missing
 sidecars leave valid session-restored state alone.
