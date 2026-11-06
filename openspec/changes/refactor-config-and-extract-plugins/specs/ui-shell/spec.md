@@ -80,6 +80,10 @@ The configuration's workspace persistence SHALL take part in managed transitions
 - **WHEN** a destination session exists but a corresponding sidecar does not
 - **THEN** valid state restored from that session is not erased merely because the sidecar is absent
 
+#### Scenario: Rapid action requests
+- **WHEN** another managed creation, switching, or deletion action is requested before the active action finishes
+- **THEN** it is refused with a visible busy explanation rather than interleaving transitions
+
 ## REMOVED Requirements
 
 ### Requirement: Unsaved-edit transition guard
@@ -92,4 +96,4 @@ The configuration's workspace persistence SHALL take part in managed transitions
 
 ### Requirement: Recoverable workspace transition failures
 **Reason**: Failure handling and recovery are part of the `git-worktree` plugin's switch protocol.
-**Migration**: Carried over unchanged into `openspec/specs/worktree-workspaces/spec.md` in RayIci/git-worktree.nvim, together with the "Rapid action requests" scenario formerly under "Workspace persistence isolation".
+**Migration**: Carried over unchanged into `openspec/specs/worktree-workspaces/spec.md` in RayIci/git-worktree.nvim.

@@ -3,7 +3,7 @@
 ## 1. Preparation
 
 - [x] 1.1 Create the working branch `refactor-config-and-extract-plugins` from `main` and verify `git status` is clean and `main` contains `c2f64ab`
-- [ ] 1.2 Archive `add-git-worktree-workspaces` with `openspec archive add-git-worktree-workspaces` and verify its requirements now appear in `openspec/specs/git-integration/spec.md` and `openspec/specs/ui-shell/spec.md`, and that `openspec validate refactor-config-and-extract-plugins --strict` no longer reports the `ui-shell` header as not found
+- [x] 1.2 Archive `add-git-worktree-workspaces` with `openspec archive add-git-worktree-workspaces` and verify its requirements now appear in `openspec/specs/git-integration/spec.md` and `openspec/specs/ui-shell/spec.md`, and that `openspec validate refactor-config-and-extract-plugins --strict` no longer reports the `ui-shell` header as not found
 - [ ] 1.3 Record a baseline: run `nvim --headless -u NONE -l tests/worktrees.lua` and a plain headless startup (`nvim --headless +qa`) and verify both pass, so later groups can be compared against it
 
 ## 2. Startup and keymap fixes
