@@ -210,8 +210,8 @@ instances stay in step. Lean mode is off by default; it drops the agent's tool s
 which is pure overhead when the diff is supplied inline. Note that `codex` emits no
 incremental output, so its replies arrive whole rather than streaming.
 
-Editing: multi-cursor `<C-n>` (skip with `q`), cursor above/below `<C-S-Up>`/`<C-S-Down>`,
-rotate cursors `<C-S-Left>`/`<C-S-Right>`, flash jump `s`, surround `ys/cs/ds`,
+Editing: multi-cursor `<C-n>` (skip with `q`), cursor above/below `<M-Up>`/`<M-Down>`,
+rotate cursors `<M-Left>`/`<M-Right>`, flash jump `s`, surround `ys/cs/ds`,
 references `]]`/`[[`, hunks `]h`/`[h`, inline AI (copilot.lua, sign in with
 `:Copilot auth`): accept line `<C-t>`, word `<C-w>`, all `<M-l>`, dismiss `<C-]>`,
 cycle `<M-]>`/`<M-[>` — `<C-w>` is a no-op without a suggestion, `<C-t>` falls back
