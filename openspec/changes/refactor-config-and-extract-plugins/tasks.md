@@ -22,7 +22,7 @@
 
 ## 4. State helper and workspace package
 
-- [ ] 4.1 Add `lua/config/state.lua` (`path`, `read`, `write`, `saver`) keeping the existing key function byte-for-byte; verify with a headless test that it reads files written in the current format, distinguishes missing from empty, and that the saver's late callbacks never write after `pause`, a cwd change or a generation bump
+- [x] 4.1 Add `lua/config/state.lua` (`path`, `read`, `write`, `saver`) keeping the existing key function byte-for-byte; verify with a headless test that it reads files written in the current format, distinguishes missing from empty, and that the saver's late callbacks never write after `pause`, a cwd change or a generation bump
 - [ ] 4.2 Port `lua/config/prefs.lua` to `config.state`; verify the rainbow toggle and SQL/conform/lsp preferences persist across a restart with the existing `prefs.json`
 - [ ] 4.3 Replace `lua/config/workspace.lua` with the `lua/config/workspace/` package (`init`, `buffers`, `breakpoints`, `pins`, `explorer`, `scope`), moving the neo-tree, pins and scope persistence out of `lua/plugins/auto-session.lua` and using `config.state` throughout; verify `tests/worktrees.lua` still passes unchanged apart from require paths
 - [ ] 4.4 Reduce `lua/plugins/auto-session.lua` to auto-session setup (hooks pointing at `config.workspace`) and the `<leader>q` keymaps, and point `lua/plugins/bufferline.lua` at `config.workspace`; verify the session round-trip, pins, breakpoints and neo-tree restore after a normal quit and after `:restart`
