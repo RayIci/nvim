@@ -4,11 +4,11 @@
 
 - [x] 1.1 Create the working branch `refactor-config-and-extract-plugins` from `main` and verify `git status` is clean and `main` contains `c2f64ab`
 - [x] 1.2 Archive `add-git-worktree-workspaces` with `openspec archive add-git-worktree-workspaces` and verify its requirements now appear in `openspec/specs/git-integration/spec.md` and `openspec/specs/ui-shell/spec.md`, and that `openspec validate refactor-config-and-extract-plugins --strict` no longer reports the `ui-shell` header as not found
-- [ ] 1.3 Record a baseline: run `nvim --headless -u NONE -l tests/worktrees.lua` and a plain headless startup (`nvim --headless +qa`) and verify both pass, so later groups can be compared against it
+- [x] 1.3 Record a baseline: run `nvim --headless -u NONE -l tests/worktrees.lua` and a plain headless startup (`nvim --headless +qa`) and verify both pass, so later groups can be compared against it
 
 ## 2. Startup and keymap fixes
 
-- [ ] 2.1 Remove the duplicated `require("config.options")` and the duplicated "Entry point" comment from `init.lua`; verify options load once and headless startup shows no errors
+- [x] 2.1 Remove the duplicated `require("config.options")` and the duplicated "Entry point" comment from `init.lua`; verify options load once and headless startup shows no errors
 - [ ] 2.2 Move multicursor's add-cursor keys to `<C-S-Up>`/`<C-S-Down>` and rotate keys to `<C-S-Left>`/`<C-S-Right>` in `lua/plugins/visual-multi.lua` (header comment included), keeping resize on `<C-arrows>` in `lua/config/keymaps.lua`; verify with `:verbose nmap <C-Up>` (resize) and `:verbose nmap <C-S-Up>` (multicursor) in a headless check
 - [ ] 2.3 Fix the misplaced "(alongside <Esc> below)" comment in `lua/config/keymaps.lua`; verify the comment matches the mapping order
 - [ ] 2.4 Update the README key-binding table for the multicursor keys and add the Windows Terminal note (unbind `ctrl+shift+up`/`ctrl+shift+down` with `"id": null`, verify with `<C-v>` in insert mode); verify every documented key exists
