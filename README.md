@@ -109,6 +109,34 @@ neo-tree.
 installed plugins (`NVIM_WORKSPACE_TEST_GIT_WORKTREE=~/Github/git-worktree.nvim` tests a
 local checkout instead).
 
+## diffbandit (trial)
+
+[diffbandit.nvim](https://github.com/CoreyKaylor/diffbandit.nvim) runs next to diffview
+(`<leader>gd`) while it's being tried out, wired by `lua/plugins/diffbandit.lua`. It shows
+two panes that keep each side's shape and line numbers, joined by a connector gutter. It
+also has a commit panel, a three-pane conflict resolver and folder diffs. In Windows
+Terminal the connectors are drawn with Unicode cells: the smooth ribbons need the Kitty
+graphics protocol.
+
+- **Keys:** the `<leader>gx` group (table below). Inside its views, `-` stages or unstages
+  the hunk or file and toggles amend, in place of diffbandit's `<Space>`, which is the leader
+  here. `g?` lists every key of the current window, and `q` closes the view.
+- **Version:** it tracks `main` until a release includes `close()`, `:DiffBanditClose` and
+  commit-message drafts (v0.3.0 has none of them). The lockfile pins the revision, so
+  nothing changes until `vim.pack.update()`. After that release, switch the spec to
+  `vim.version.range("0")`.
+- **Workspace:** a worktree switch closes every diffbandit view before it checks for unsaved
+  buffers, so "Save all and switch" never writes the commit panel's message (writing it
+  commits). An unfinished message is kept in memory as a draft and comes back when the panel
+  reopens in the same Neovim. Quitting closes the views before the session is saved, but a
+  manual `<leader>qs` leaves them open.
+- **commitsmith** doesn't attach to diffbandit's commit-message window, which has no
+  `gitcommit` filetype. Use Neogit's commit flow (`<leader>gc`) for AI messages.
+
+Load cost: diffbandit is configured the first time one of its commands or keys is used,
+not at startup. `nvim --headless -u NONE -l tests/diffbandit.lua` tests the keys, closing,
+switches and the exit-time session against the installed plugins.
+
 ## Adding a plugin
 
 Create `lua/plugins/<name>.lua` and list `<name>` in `lua/plugins/init.lua` where it should
@@ -170,6 +198,7 @@ to discard. `nvim-pack-lock.json` is committed; treat it like a lockfile.
 | `<leader>f` | find: files `<leader><leader>`, resume `ff`, grep `fg`, buffers `fb`, recent `fr`, diagnostics `fd`, TODOs `ft`, notifications `fn` |
 | `<leader>g` | git: lazygit `gg`, stage hunk `gs`, reset `gr`, preview `gp`, blame `gb`, draft commit msg (in gitcommit) `gm`, commit msg chat (in gitcommit) `gc`, configure commit AI (in gitcommit) `gM` |
 | `<leader>gw` | worktrees: switch workspace `gww`, create and switch `gwc`, delete inactive checkout `gwd` (also Neogit status `w`) |
+| `<leader>gx` | diffbandit (trial): all changes `gxx`, staged `gxs`, current file `gxf`, commit panel `gxc`, compare branches `gxb`, commit log `gxl`, menu `gxm`, close view `gxq`; in its views `-` stages/toggles amend, `g?` help, `q` close |
 | `<leader>d` | debug: continue `dc`/`F5`, breakpoint `dd`/`B`, groups: breakpoints `db*`, step `ds*` (+`F9/F10/F11`), windows `dw*`, UI `du*` (toggle `duu`), REPL `dr*` (clear `drx`, highlighted), sessions `dS*`, launch `dl*`, eval `de/dE`, hover `dh`, virtual text toggle `dv` (persisted) |
 | `<leader>c` | code: format `cf`, diagnostics float `cd`, inlay hints `ci` (LSP: `gd`, `grr`, `grn`, `gra`, `K`) |
 | `<leader>b` | buffers: pin `bp`, close others `bo`, delete `bd`/`xw`, close all `xa` / others `xA` (keep pinned+unsaved; cycle: `Tab`/`S-Tab`, `S-h`/`S-l`) |

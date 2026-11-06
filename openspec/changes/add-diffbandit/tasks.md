@@ -50,7 +50,7 @@
 
 ## 4. Documentation
 
-- [ ] 4.1 Update the README:
+- [x] 4.1 Update the README:
   - The `<leader>gx` keys and the in-view `-` staging key go in the key-binding section.
   - Add a short "diffbandit (trial)" note covering four things: it sits next to diffview, it tracks `main` until a release has the close API, views close on worktree switch and on exit, and commitsmith may not attach to its commit-message window.
   - Add `tests/diffbandit.lua` wherever the tests are listed.
