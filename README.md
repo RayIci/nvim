@@ -86,50 +86,28 @@ sidecars leave valid session-restored state alone.
 
 ## Git worktree workspaces
 
-`<leader>gww` switches the whole workspace in this Neovim instance; `<leader>gwc`
-creates a checkout and switches to it; `<leader>gwd` removes an inactive checkout.
-Neogit's status-buffer `w` opens the same managed menu. Branch selection uses Telescope;
-the destination input contains a real, editable absolute default.
+Worktrees are managed by [git-worktree.nvim](https://github.com/RayIci/git-worktree.nvim),
+wired by `lua/plugins/git-worktree.lua`. `<leader>gww` switches the whole workspace in this
+Neovim instance, `<leader>gwc` creates a checkout and switches to it, `<leader>gwd` removes
+an inactive one; Neogit's status-buffer `w` opens the same menu.
 
-For a main checkout `/work/client/backend` and branch `feature/login`, the suggested
-path is `/work/client/backend.worktrees/feature/login`. No parent folder name is special.
-Git's registered main checkout anchors this path even when creation starts from
-`backend.worktrees/another-branch`, a subdirectory, or an external linked checkout
-such as `/tmp/review-backend`. Branch slashes remain subdirectories. Absolute and `~/`
-overrides work; relative overrides resolve against the main checkout. Empty or occupied
-destinations (including symlinks) are rejected. Cancelling the prompts creates nothing.
-A usable non-bare main checkout is required; bare-only repositories are unsupported.
+New worktrees default to `<main-checkout>.worktrees/<branch>` (for `/work/client/backend`
+and `feature/login`: `/work/client/backend.worktrees/feature/login`), with an editable
+destination. Creation never fetches or copies `.env` files and dependencies; set those up
+per checkout.
 
-Choose a local branch, an available remote-tracking branch, or **Create new branch**.
-New branches start at the invoking checkout's HEAD. A remote selection drops only its
-remote prefix for the local name: an existing local counterpart is reused without a
-reset; otherwise a tracking branch is created. Creation never fetches, rebases, pushes,
-copies ignored files, or installs dependencies. Fetch refs explicitly when needed and
-set up `.env`, dependencies, and virtual environments separately in each checkout.
+A switch saves the outgoing session and this configuration's workspace state (the
+`config.workspace` participant: buffers, pins, breakpoints, neo-tree, scope), then
+restores the target's. Unsaved buffers must all be saved or the switch is cancelled (the
+default); live Neovim terminal jobs and debug sessions block it. External terminals, tmux,
+servers and AI agents keep their working directories. A broken target session puts you
+back in the source; see the plugin's README for every safeguard and the recovery rules.
+The enabled integrations are auto-session, Neogit, nvim-dap, scope, bufferline and
+neo-tree.
 
-Switching explicitly saves the outgoing session and sidecars (even with exit autosave
-off, preserving that preference), then replaces buffers, tabs, layout, pins, breakpoints,
-and explorer state with the target's saved state. A first visit starts with one clean
-buffer and a closed explorer unless target sidecars exist. Selecting the current
-checkout does nothing. Hidden and other-tab unsaved buffers must all be saved or the
-switch is cancelled; cancellation is the default. Unnamed/unwritable buffers, live
-Neovim terminal jobs, and active DAP sessions block switching rather than being
-discarded or stopped. External terminals, tmux, servers, and AI processes are untouched
-and retain their original working directories.
-
-If creation succeeds but switching is cancelled or fails, the checkout is retained and
-its path is reported. A failed destination restore attempts to recover the saved source
-session without overwriting the target. If recovery also fails, automatic writes stop
-and the error identifies the current cwd and recoverable source session.
-
-Deletion confirms the exact path and branch, refuses main/current/locked worktrees and
-all modified, staged, untracked, or ignored content, and never forces removal or deletes
-branches or saved editor state. The raw `:Neogit worktree` popup remains an **advanced
-Git-only interface**, not a full workspace switch. Use the managed keys or status `w`
-for session-aware switching; arbitrary `:cd` and external Git commands are not intercepted.
-
-The focused regression runner uses disposable repositories and isolated editor state:
-`nvim --headless -u NONE -l tests/worktrees.lua` (requires the already-installed plugins).
+`nvim --headless -u NONE -l tests/workspace.lua` runs the end-to-end suite against the
+installed plugins (`NVIM_WORKSPACE_TEST_GIT_WORKTREE=~/Github/git-worktree.nvim` tests a
+local checkout instead).
 
 ## Adding a plugin
 
@@ -165,6 +143,7 @@ These live in their own repositories and are installed by vim.pack like any othe
 |---|---|
 | [agentdiff.nvim](https://github.com/RayIci/agentdiff.nvim) | `lua/plugins/agentdiff.lua` |
 | [commitsmith.nvim](https://github.com/RayIci/commitsmith.nvim) | `lua/plugins/commitsmith.lua` |
+| [git-worktree.nvim](https://github.com/RayIci/git-worktree.nvim) | `lua/plugins/git-worktree.lua` |
 
 To try unpublished edits, start Neovim with the checkout first on `runtimepath`:
 `nvim --cmd 'set rtp^=~/Github/commitsmith.nvim'`.
