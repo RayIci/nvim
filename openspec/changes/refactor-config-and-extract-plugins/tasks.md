@@ -9,7 +9,7 @@
 ## 2. Startup and keymap fixes
 
 - [x] 2.1 Remove the duplicated `require("config.options")` and the duplicated "Entry point" comment from `init.lua`; verify options load once and headless startup shows no errors
-- [ ] 2.2 Move multicursor's add-cursor keys to `<C-S-Up>`/`<C-S-Down>` and rotate keys to `<C-S-Left>`/`<C-S-Right>` in `lua/plugins/visual-multi.lua` (header comment included), keeping resize on `<C-arrows>` in `lua/config/keymaps.lua`; verify with `:verbose nmap <C-Up>` (resize) and `:verbose nmap <C-S-Up>` (multicursor) in a headless check
+- [x] 2.2 Move multicursor's add-cursor keys to `<C-S-Up>`/`<C-S-Down>` and rotate keys to `<C-S-Left>`/`<C-S-Right>` in `lua/plugins/visual-multi.lua` (header comment included), keeping resize on `<C-arrows>` in `lua/config/keymaps.lua`; verify with `:verbose nmap <C-Up>` (resize) and `:verbose nmap <C-S-Up>` (multicursor) in a headless check
 - [ ] 2.3 Fix the misplaced "(alongside <Esc> below)" comment in `lua/config/keymaps.lua`; verify the comment matches the mapping order
 - [ ] 2.4 Update the README key-binding table for the multicursor keys and add the Windows Terminal note (unbind `ctrl+shift+up`/`ctrl+shift+down` with `"id": null`, verify with `<C-v>` in insert mode); verify every documented key exists
 

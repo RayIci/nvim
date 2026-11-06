@@ -5,8 +5,9 @@
 ---  <C-n>        (n/v) add cursor on next match of the word under cursor
 ---  <C-p>        (n/v) add cursor on previous match
 ---  q            (n/v) skip current match, jump to next   [while cursors exist]
----  <C-Up>/<C-Down> (n/v) add a cursor on the line above/below
----  <C-Left>/<C-Right> (n/v) rotate the main cursor
+---  <C-S-Up>/<C-S-Down> (n/v) add a cursor on the line above/below
+---  <C-S-Left>/<C-S-Right> (n/v) rotate the main cursor
+---  (plain <C-arrows> resize windows; see config/keymaps.lua)
 ---  <leader>ma   (n/v) add cursors to all matches in the buffer
 ---  <leader>ms   (v)   split visual selection into per-line cursors
 ---  <leader>mS   (v)   add cursors for each match inside the selection
@@ -55,21 +56,21 @@ function M.setup()
   end)
 
   -- Add cursors on the lines above/below.
-  set({ "n", "v" }, "<C-Up>", function()
+  set({ "n", "v" }, "<C-S-Up>", function()
     mc.lineAddCursor(-1)
   end, { desc = "Multicursor: add cursor above" })
-  set({ "n", "v" }, "<C-Down>", function()
+  set({ "n", "v" }, "<C-S-Down>", function()
     mc.lineAddCursor(1)
   end, { desc = "Multicursor: add cursor below" })
 
   -- Rotate which cursor is the "main" cursor.
-  set({ "n", "v" }, "<C-Left>", function()
+  set({ "n", "v" }, "<C-S-Left>", function()
     if mc.cursorsEnabled() and mc.hasCursors() then
       mc.prevCursor()
     end
   end, { desc = "Multicursor: previous cursor" })
 
-  set({ "n", "v" }, "<C-Right>", function()
+  set({ "n", "v" }, "<C-S-Right>", function()
     if mc.cursorsEnabled() and mc.hasCursors() then
       mc.nextCursor()
     end
