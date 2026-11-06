@@ -134,6 +134,15 @@ return M
 level. `nvim --headless -u NONE -l tests/plugin-modules.lua` checks that. Language-pack
 plugins stay in their pack's `packs` field.
 
+## Themes
+
+`<leader>ut` opens the theme picker (themery); the selection persists. The default,
+`vale-night`/`vale-day`, comes from [vale.nvim](https://github.com/RayIci/vale.nvim), which
+also provides the theme studio: `:Vale` (or `<leader>uv`), `:Vale new <name>`,
+`:Vale edit <name>`. This configuration's own themes (`vale-starter`) live in `themes/`,
+with the loaders the studio generates in `colors/` and `lua/lualine/themes/`. Editing the
+bundled `vale` theme copies it into `themes/` first, so plugin updates never overwrite it.
+
 ## Own plugins
 
 These live in their own repositories and are installed by vim.pack like any other plugin
@@ -144,6 +153,7 @@ These live in their own repositories and are installed by vim.pack like any othe
 | [agentdiff.nvim](https://github.com/RayIci/agentdiff.nvim) | `lua/plugins/agentdiff.lua` |
 | [commitsmith.nvim](https://github.com/RayIci/commitsmith.nvim) | `lua/plugins/commitsmith.lua` |
 | [git-worktree.nvim](https://github.com/RayIci/git-worktree.nvim) | `lua/plugins/git-worktree.lua` |
+| [vale.nvim](https://github.com/RayIci/vale.nvim) | `lua/plugins/vale.lua` |
 
 To try unpublished edits, start Neovim with the checkout first on `runtimepath`:
 `nvim --cmd 'set rtp^=~/Github/commitsmith.nvim'`.
