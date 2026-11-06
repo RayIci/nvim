@@ -222,13 +222,68 @@ navigation `<C-h/j/k/l>` (vim-tmux-navigator), window resize `<C-Up/Down/Left/Ri
 Cmdline renders at the bottom row; macro recording shows a red `REC @reg` indicator in
 the statusline.
 
-**Windows Terminal:** it binds `ctrl+shift+up`/`ctrl+shift+down` to scrolling by default,
-so they never reach Neovim. Unbind them in its `settings.json` (`"actions"` / keybindings):
+### Terminals and Alt+arrows
+
+The multicursor keys `<M-Up/Down/Left/Right>` only work if the terminal passes Alt+arrows
+on to Neovim. Some terminals use them for their own shortcuts; unbind those. Every snippet
+below is safe to paste even when nothing is bound.
+
+To check, press `<C-v>` in insert mode, then Alt+Up: `^[[1;3A` should appear as text. If
+nothing appears, or the terminal reacts instead, the key is still bound.
+
+**Windows Terminal** binds Alt+arrows to moving focus between its panes. Open Settings →
+*Open JSON file* and add these to the `"keybindings"` array:
 
 ```json
-{ "id": null, "keys": "ctrl+shift+up" },
-{ "id": null, "keys": "ctrl+shift+down" }
+{ "id": null, "keys": "alt+up" },
+{ "id": null, "keys": "alt+down" },
+{ "id": null, "keys": "alt+left" },
+{ "id": null, "keys": "alt+right" }
 ```
 
-To check a key reaches Neovim, press `<C-v>` then the key in insert mode: `<C-S-Up>`
-should appear as text.
+On an older version with no `"keybindings"` array, add them to `"actions"` with
+`"command": "unbound"` in place of `"id": null`. Alt+Shift+arrows (resize pane) keep
+working.
+
+**tmux** binds Alt+arrows only after the prefix, so nothing is needed unless you added a
+`bind -n M-Up …` yourself (this repo's tmux config has none). To make sure, in
+`tmux.conf`:
+
+```tmux
+unbind -n M-Up
+unbind -n M-Down
+unbind -n M-Left
+unbind -n M-Right
+```
+
+**Ghostty** (macOS) binds Alt+Left/Right to word jumps. In `~/.config/ghostty/config`:
+
+```ini
+keybind = alt+left=unbind
+keybind = alt+right=unbind
+macos-option-as-alt = true
+```
+
+**kitty**, **WezTerm**, **Alacritty** and **GNOME Terminal** bind nothing to Alt+arrows on
+Linux. On macOS, make Option act as Alt:
+
+```conf
+# kitty.conf
+macos_option_as_alt yes
+```
+
+```toml
+# alacritty.toml
+[window]
+option_as_alt = "Both"
+```
+
+**Konsole**: in Settings → *Configure Keyboard Shortcuts*, search for `Alt+Up`, `Alt+Down`,
+`Alt+Left` and `Alt+Right`, and clear any shortcut using them.
+
+**iTerm2**: in Settings → Profiles → Keys → General, set *Left Option key* to `Esc+`. Under
+*Key Mappings*, delete any ⌥←, ⌥→, ⌥↑ or ⌥↓ entries (the *Natural Text Editing* preset
+adds ⌥← and ⌥→).
+
+**Terminal.app**: in Settings → Profiles → Keyboard, tick *Use Option as Meta key*, and
+delete any ⌥← or ⌥→ entries from the key list.
