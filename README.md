@@ -50,13 +50,15 @@ nvim-dap, mason-tool-installer, and nvim-treesitter. Restart after adding a pack
 ```
 init.lua                  entry point (ordered requires)
 lua/config/options.lua    vim options
-lua/config/pack.lua       vim.pack plugin list + build hooks
+lua/config/pack.lua       the one vim.pack installer + shared libraries
 lua/config/keymaps.lua    global keymaps
 lua/config/autocmds.lua   global autocmds
 lua/config/prefs.lua      persisted preferences (JSON in stdpath state)
 lua/config/workspace.lua  plugin-free session/breakpoint/pin persistence
-lua/plugins/<name>.lua    one plugin per file: setup + its keymaps
+lua/plugins/<name>.lua    one plugin per file: install spec (M.spec) + setup + its keymaps
+lua/plugins/init.lua      ordered list of plugin modules (setup order)
 lua/langs/<lang>.lua      drop-in language packs
+tests/                    headless checks (`nvim --headless -u NONE -l tests/<file>.lua`)
 ```
 
 ## Workspace persistence (plugin-free)
@@ -121,6 +123,31 @@ for session-aware switching; arbitrary `:cd` and external Git commands are not i
 
 The focused regression runner uses disposable repositories and isolated editor state:
 `nvim --headless -u NONE -l tests/worktrees.lua` (requires the already-installed plugins).
+
+## Adding a plugin
+
+Create `lua/plugins/<name>.lua` and list `<name>` in `lua/plugins/init.lua` where it should
+be set up. The module declares what to install and configures it:
+
+```lua
+local M = {}
+
+M.spec = {
+  "owner/plugin.nvim",                                   -- GitHub shorthand
+  { src = "owner/other.nvim", version = "v1.2.0" },      -- or a full spec (name, version, build)
+}
+
+function M.setup()
+  require("plugin").setup({})
+end
+
+return M
+```
+
+`lua/config/pack.lua` collects every module's `M.spec` (after the shared libraries) into one
+`vim.pack.add()` before any `setup()` runs, so modules must not `require` a plugin at the top
+level. `nvim --headless -u NONE -l tests/plugin-modules.lua` checks that. Language-pack
+plugins stay in their pack's `packs` field.
 
 ## Plugin updates
 
