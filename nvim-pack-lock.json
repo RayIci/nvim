@@ -1,7 +1,7 @@
 {
   "plugins": {
     "agentdiff.nvim": {
-      "rev": "94ac06ad48bb68f1903bd804fe6fa276f5738d0b",
+      "rev": "342566531723069092bf11a074d743c42b4d0308",
       "src": "https://github.com/RayIci/agentdiff.nvim"
     },
     "auto-session": {
@@ -82,7 +82,7 @@
       "src": "https://github.com/rafamadriz/friendly-snippets"
     },
     "git-worktree.nvim": {
-      "rev": "ff9ea593865510fbb9efec14acfa9f1caff40f61",
+      "rev": "be373d540d995c00ce92c12f365d40d9ac73edb5",
       "src": "https://github.com/RayIci/git-worktree.nvim"
     },
     "github-nvim-theme": {
@@ -341,7 +341,7 @@
       "src": "https://github.com/folke/trouble.nvim"
     },
     "vale.nvim": {
-      "rev": "67e2c9ea54c4ba390e3dfa3c42129cc35d25e879",
+      "rev": "32280b5246a64839e0bff30dc7894a2600bd2212",
       "src": "https://github.com/RayIci/vale.nvim"
     },
     "venv-selector.nvim": {
