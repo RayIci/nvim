@@ -9,12 +9,8 @@
 ---  dap        -> called with the nvim-dap module to register adapters/configs
 ---  mason      -> mason-tool-installer ensure_installed
 
----A plugin a language pack ships with, installed via vim.pack.
----@class LangPackPlugin
----@field src string "owner/name" GitHub shorthand or full URL
----@field name? string overrides the name vim.pack derives from src
----@field version? string|vim.VersionRange
----@field build? fun(path: string) run after the plugin is installed or updated
+---A plugin a language pack ships with, installed via config.pack.install().
+---@alias LangPackPlugin PackSpec
 
 ---blink.cmp source contributions from a language pack.
 ---@class LangCompletion
@@ -183,45 +179,12 @@ end
 
 ---Load all language packs, wire LSP servers, and push the merged language
 ---data into each subsystem via its apply() function (plugins/ setup ran first).
----Install pack-declared plugins with one vim.pack.add() call, wiring their
----build hooks to PackChanged first so first-install builds run.
----@param plugins LangPackPlugin[]
-local function install_packs(plugins)
-  if #plugins == 0 then
-    return
-  end
-  ---@type table<string, fun(path: string)>
-  local build = {}
-  ---@type (string|table)[]
-  local specs = {}
-  for _, plugin in ipairs(plugins) do
-    local src = plugin.src:match("^https?://") and plugin.src or ("https://github.com/" .. plugin.src)
-    if plugin.build then
-      local name = plugin.name or (src:match("([^/]+)$"):gsub("%.git$", ""))
-      build[name] = plugin.build
-    end
-    specs[#specs + 1] = { src = src, name = plugin.name, version = plugin.version }
-  end
-  if next(build) then
-    vim.api.nvim_create_autocmd("PackChanged", {
-      group = vim.api.nvim_create_augroup("langs.pack.build", { clear = true }),
-      callback = function(ev)
-        local hook = build[ev.data.spec.name]
-        if hook and (ev.data.kind == "install" or ev.data.kind == "update") then
-          hook(ev.data.path)
-        end
-      end,
-    })
-  end
-  vim.pack.add(specs, { confirm = false })
-end
-
 function M.setup()
   local merged = collect()
 
   -- Per-language plugins first: later wiring (dap fns, test factories,
   -- pack setup) may require() modules these plugins provide.
-  install_packs(merged.packs)
+  require("config.pack").install(merged.packs)
 
   -- LSP: apply per-server overrides, then enable everything.
   for server, cfg in pairs(merged.lsp) do

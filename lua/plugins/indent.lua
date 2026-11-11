@@ -2,6 +2,11 @@
 ---@class PluginIndent
 local M = {}
 
+---@type (string|PackSpec)[]
+M.spec = {
+  "lukas-reineke/indent-blankline.nvim",
+}
+
 function M.setup()
   require("ibl").setup({
     indent = { char = "│" },

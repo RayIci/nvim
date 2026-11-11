@@ -4,6 +4,11 @@
 ---@class PluginLsp
 local M = {}
 
+---@type (string|PackSpec)[]
+M.spec = {
+  "neovim/nvim-lspconfig",
+}
+
 local function on_attach_keymaps(ev)
   ---@param mode string|string[]
   ---@param lhs string

@@ -2,6 +2,11 @@
 ---@class PluginGitConflict
 local M = {}
 
+---@type (string|PackSpec)[]
+M.spec = {
+  "akinsho/git-conflict.nvim",
+}
+
 function M.setup()
   require("git-conflict").setup({
     default_mappings = {

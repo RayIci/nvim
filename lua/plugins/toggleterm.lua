@@ -6,6 +6,11 @@
 ---@class PluginToggleterm
 local M = {}
 
+---@type (string|PackSpec)[]
+M.spec = {
+  "akinsho/toggleterm.nvim",
+}
+
 ---@alias TermHook fun(term: table)  # term is a toggleterm Terminal
 ---@alias TermDataHook fun(term: table, job: number, data: string[], name: string)
 ---@alias TermExitHook fun(term: table, job: number, exit_code: number, name: string)

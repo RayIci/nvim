@@ -2,6 +2,11 @@
 ---@class PluginConform
 local M = {}
 
+---@type (string|PackSpec)[]
+M.spec = {
+  "stevearc/conform.nvim",
+}
+
 ---Per-buffer formatter override (`vim.b.conform_formatters`), e.g. notebooks
 ---that must skip formatters unsafe for them. nil = the filetype's formatters.
 ---@param bufnr integer

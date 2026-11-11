@@ -122,7 +122,8 @@ providers.wsl_native = function()
         return vim.deepcopy(cached[reg])
       end
 
-      local lines = vim.fn.systemlist({ "powershell.exe", "-NoLogo", "-NoProfile", "-Command", "Get-Clipboard -Raw" })
+      local lines =
+        vim.fn.systemlist({ "powershell.exe", "-NoLogo", "-NoProfile", "-Command", "Get-Clipboard -Raw" })
       if vim.v.shell_error ~= 0 then
         return 0
       end

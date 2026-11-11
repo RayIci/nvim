@@ -3,6 +3,11 @@
 ---@class PluginLazydev
 local M = {}
 
+---@type (string|PackSpec)[]
+M.spec = {
+  "folke/lazydev.nvim",
+}
+
 function M.setup()
   require("lazydev").setup({
     library = {

@@ -2,6 +2,11 @@
 ---@class PluginLightbulb
 local M = {}
 
+---@type (string|PackSpec)[]
+M.spec = {
+  "kosayoda/nvim-lightbulb",
+}
+
 function M.setup()
   require("nvim-lightbulb").setup({
     sign = { enabled = true, text = "💡" },

@@ -5,6 +5,11 @@
 ---@class PluginLint
 local M = {}
 
+---@type (string|PackSpec)[]
+M.spec = {
+  "mfussenegger/nvim-lint",
+}
+
 function M.setup() end
 
 ---@param linters_by_ft table<string, string[]> from the merged language packs
@@ -43,9 +48,13 @@ function M.apply(linters_by_ft)
         return
       end
       timer:stop()
-      timer:start(400, 0, vim.schedule_wrap(function()
-        try_lint(ev.buf)
-      end))
+      timer:start(
+        400,
+        0,
+        vim.schedule_wrap(function()
+          try_lint(ev.buf)
+        end)
+      )
     end,
   })
 end

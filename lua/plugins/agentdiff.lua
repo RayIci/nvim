@@ -6,6 +6,11 @@
 ---@class PluginAgentdiff
 local M = {}
 
+---@type (string|PackSpec)[]
+M.spec = {
+  "RayIci/agentdiff.nvim",
+}
+
 ---One of agentdiff's integration modules, or nil when the installed version
 ---doesn't have it yet (that integration is then simply skipped).
 ---@param name "neotree"|"oil"|"grug_far"

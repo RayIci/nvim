@@ -3,6 +3,11 @@
 ---@class PluginNeogit
 local M = {}
 
+---@type (string|PackSpec)[]
+M.spec = {
+  "NeogitOrg/neogit",
+}
+
 function M.setup()
   require("neogit").setup({
     kind = "floating",
@@ -14,7 +19,7 @@ function M.setup()
       popup = { ["w"] = false },
       status = {
         ["w"] = function()
-          require("plugins.worktrees").menu()
+          require("git-worktree").menu()
         end,
       },
     },

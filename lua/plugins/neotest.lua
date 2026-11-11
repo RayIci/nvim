@@ -4,6 +4,11 @@
 ---@class PluginNeotest
 local M = {}
 
+---@type (string|PackSpec)[]
+M.spec = {
+  "nvim-neotest/neotest",
+}
+
 function M.setup()
   local wk = require("which-key")
   wk.add({

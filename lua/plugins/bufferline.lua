@@ -5,6 +5,11 @@
 ---@class PluginBufferline
 local M = {}
 
+---@type (string|PackSpec)[]
+M.spec = {
+  "akinsho/bufferline.nvim",
+}
+
 ---Whether a buffer sits in bufferline's pinned group (private API, pcall-guarded).
 ---@param buf integer
 ---@return boolean

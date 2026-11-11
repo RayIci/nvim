@@ -1,66 +1,92 @@
 ---Explicit, ordered plugin setup. Each module configures one plugin (or one
----tight cluster) and owns that plugin's keymaps. Subsystems that consume
----language-pack data expose an apply() called later by require("langs").setup().
+---tight cluster), owns that plugin's keymaps, and declares the plugins it
+---needs in `M.spec` (collected by lua/config/pack.lua before any setup runs).
+---Subsystems that consume language-pack data expose an apply() called later
+---by require("langs").setup().
+---@class PluginsIndex
+local M = {}
 
--- Core editing/IDE subsystems
-require("plugins.mason").setup()
-require("plugins.treesitter").setup()
-require("plugins.lsp").setup()
-require("plugins.folding").setup()
-require("plugins.lightbulb").setup()
-require("plugins.lspsaga").setup()
-require("plugins.blink").setup()
-require("plugins.lsp-markdown-fix").setup()
-require("plugins.render-markdown").setup()
-require("plugins.conform").setup()
-require("plugins.lint").setup()
-require("plugins.dap").setup()
-require("plugins.overseer").setup()
-require("plugins.neotest").setup()
-require("plugins.toggleterm").setup()
+---Setup order; a module is listed once.
+M.modules = {
+  -- Core editing/IDE subsystems
+  "mason",
+  "treesitter",
+  "lsp",
+  "folding",
+  "lightbulb",
+  "lspsaga",
+  "blink",
+  "lsp-markdown-fix",
+  "render-markdown",
+  "conform",
+  "lint",
+  "dap",
+  "overseer",
+  "neotest",
+  "toggleterm",
 
--- AI
-require("plugins.copilot").setup()
-require("plugins.sidekick").setup()
-require("plugins.commitsmith").setup()
-require("plugins.agentdiff").setup()
+  -- AI
+  "copilot",
+  "sidekick",
+  "commitsmith",
+  "agentdiff",
 
--- Git
-require("plugins.gitsigns").setup()
-require("plugins.lazygit").setup()
-require("plugins.diffview").setup()
-require("plugins.neogit").setup()
-require("plugins.octo").setup()
-require("plugins.git-conflict").setup()
+  -- Git
+  "gitsigns",
+  "lazygit",
+  "diffview",
+  "neogit",
+  "octo",
+  "git-conflict",
 
--- Pickers / navigation
-require("plugins.telescope").setup()
-require("plugins.flash").setup()
-require("plugins.illuminate").setup()
-require("plugins.grug-far").setup()
+  -- Pickers / navigation
+  "telescope",
+  "flash",
+  "illuminate",
+  "grug-far",
 
--- UI
-require("plugins.theme").setup()
-require("plugins.snacks").setup()
-require("plugins.whichkey").setup()
-require("plugins.noice").setup()
-require("plugins.trouble").setup()
-require("plugins.todo-comments").setup()
-require("plugins.indent").setup()
-require("plugins.lualine").setup()
-require("plugins.bufferline").setup()
-require("plugins.barbecue").setup()
-require("plugins.scope").setup()
-require("plugins.neotree").setup()
-require("plugins.oil").setup()
-require("plugins.auto-session").setup()
-require("plugins.worktrees").setup()
+  -- UI
+  "vale",
+  "theme",
+  "snacks",
+  "whichkey",
+  "noice",
+  "trouble",
+  "todo-comments",
+  "indent",
+  "lualine",
+  "bufferline",
+  "barbecue",
+  "scope",
+  "neotree",
+  "oil",
+  "auto-session",
+  "git-worktree",
 
--- Editing QoL
-require("plugins.surround").setup()
-require("plugins.autopairs").setup()
-require("plugins.rainbow").setup()
-require("plugins.guess-indent").setup()
-require("plugins.better-escape").setup()
-require("plugins.visual-multi").setup()
-require("plugins.lazydev").setup()
+  -- Editing QoL
+  "surround",
+  "autopairs",
+  "rainbow",
+  "guess-indent",
+  "better-escape",
+  "visual-multi",
+  "lazydev",
+}
+
+---Every module's install specs, in setup order.
+---@return (string|PackSpec)[]
+function M.specs()
+  local specs = {}
+  for _, name in ipairs(M.modules) do
+    vim.list_extend(specs, require("plugins." .. name).spec or {})
+  end
+  return specs
+end
+
+function M.setup()
+  for _, name in ipairs(M.modules) do
+    require("plugins." .. name).setup()
+  end
+end
+
+return M

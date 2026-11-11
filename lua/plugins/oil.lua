@@ -3,6 +3,11 @@
 ---@class PluginOil
 local M = {}
 
+---@type (string|PackSpec)[]
+M.spec = {
+  "stevearc/oil.nvim",
+}
+
 ---Drop oil from a freshly loaded session. auto-session never closes the last
 ---window and :restart runs :mksession itself (no pre-write event exists), so
 ---an oil window can end up in either session file. Floats close; normal

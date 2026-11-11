@@ -5,8 +5,10 @@
 ---  <C-n>        (n/v) add cursor on next match of the word under cursor
 ---  <C-p>        (n/v) add cursor on previous match
 ---  q            (n/v) skip current match, jump to next   [while cursors exist]
----  <C-Up>/<C-Down> (n/v) add a cursor on the line above/below
----  <C-Left>/<C-Right> (n/v) rotate the main cursor
+---  <M-Up>/<M-Down>     (n/v) add a cursor on the line above/below
+---  <M-Left>/<M-Right>  (n/v) rotate the main cursor
+---  (<C-arrows> resize windows, see config/keymaps.lua; terminals that bind
+---  Alt+arrows themselves must unbind them, see the README)
 ---  <leader>ma   (n/v) add cursors to all matches in the buffer
 ---  <leader>ms   (v)   split visual selection into per-line cursors
 ---  <leader>mS   (v)   add cursors for each match inside the selection
@@ -16,6 +18,11 @@
 ---  <Esc>        (n)   clear all cursors (or re-enable if disabled)
 ---@class PluginVisualMulti
 local M = {}
+
+---@type (string|PackSpec)[]
+M.spec = {
+  { src = "jake-stewart/multicursor.nvim", version = "1.0" },
+}
 
 function M.setup()
   local mc = require("multicursor-nvim")
@@ -55,21 +62,21 @@ function M.setup()
   end)
 
   -- Add cursors on the lines above/below.
-  set({ "n", "v" }, "<C-Up>", function()
+  set({ "n", "v" }, "<M-Up>", function()
     mc.lineAddCursor(-1)
   end, { desc = "Multicursor: add cursor above" })
-  set({ "n", "v" }, "<C-Down>", function()
+  set({ "n", "v" }, "<M-Down>", function()
     mc.lineAddCursor(1)
   end, { desc = "Multicursor: add cursor below" })
 
   -- Rotate which cursor is the "main" cursor.
-  set({ "n", "v" }, "<C-Left>", function()
+  set({ "n", "v" }, "<M-Left>", function()
     if mc.cursorsEnabled() and mc.hasCursors() then
       mc.prevCursor()
     end
   end, { desc = "Multicursor: previous cursor" })
 
-  set({ "n", "v" }, "<C-Right>", function()
+  set({ "n", "v" }, "<M-Right>", function()
     if mc.cursorsEnabled() and mc.hasCursors() then
       mc.nextCursor()
     end

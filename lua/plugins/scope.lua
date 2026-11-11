@@ -4,6 +4,11 @@
 ---@class PluginScope
 local M = {}
 
+---@type (string|PackSpec)[]
+M.spec = {
+  "tiagovla/scope.nvim",
+}
+
 function M.setup()
   require("scope").setup({})
 end

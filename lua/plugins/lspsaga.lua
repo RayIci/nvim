@@ -2,6 +2,11 @@
 ---@class PluginLspsaga
 local M = {}
 
+---@type (string|PackSpec)[]
+M.spec = {
+  "nvimdev/lspsaga.nvim",
+}
+
 function M.setup()
   require("lspsaga").setup({
     symbol_in_winbar = { enable = false },

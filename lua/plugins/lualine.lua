@@ -7,6 +7,11 @@
 ---@class PluginLualine
 local M = {}
 
+---@type (string|PackSpec)[]
+M.spec = {
+  "nvim-lualine/lualine.nvim",
+}
+
 ---Component colour taken from a highlight group of the active colorscheme,
 ---so the label follows whatever theme is loaded. Falls back to a fixed hex
 ---when the theme leaves that group without a foreground. Evaluated at draw

@@ -4,6 +4,11 @@
 ---@class PluginOverseer
 local M = {}
 
+---@type (string|PackSpec)[]
+M.spec = {
+  "stevearc/overseer.nvim",
+}
+
 function M.setup()
   require("overseer").setup({
     task_list = { direction = "bottom", min_height = 12 },

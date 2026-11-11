@@ -4,6 +4,11 @@
 ---@class PluginRainbow
 local M = {}
 
+---@type (string|PackSpec)[]
+M.spec = {
+  "HiPhish/rainbow-delimiters.nvim",
+}
+
 ---@param enabled boolean
 local function apply_all(enabled)
   local rd = require("rainbow-delimiters")

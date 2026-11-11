@@ -1,136 +1,66 @@
----Plugin list managed by native vim.pack (see :h vim.pack).
+---Plugin installation through native vim.pack (see :h vim.pack).
 ---Lockfile: nvim-pack-lock.json next to init.lua — keep it under version control.
 ---Update flow: :lua vim.pack.update()  ->  review buffer  ->  :write to apply.
+---
+---`install()` is the single installer: the core plugins (shared dependencies
+---below plus each lua/plugins/*.lua module's `M.spec`) and the language packs
+---(lua/langs/init.lua) both go through it.
+---@class ConfigPack
+local M = {}
 
----@param repo string owner/name GitHub shorthand
----@return string url
-local function gh(repo)
-  return "https://github.com/" .. repo
-end
+---One plugin to install.
+---@class PackSpec
+---@field src string "owner/name" GitHub shorthand or full URL
+---@field name? string overrides the name vim.pack derives from src
+---@field version? string|vim.VersionRange
+---@field build? fun(path: string) run after the plugin is installed or updated
 
--- Build hooks: run after a plugin is installed or updated.
+---Build hooks by plugin name, filled by install(); one PackChanged handler
+---serves every call.
 ---@type table<string, fun(path: string)>
-local build = {
-  ["telescope-fzf-native.nvim"] = function(path)
-    vim.system({ "make" }, { cwd = path }):wait()
-  end,
-}
+local builds = {}
 
 vim.api.nvim_create_autocmd("PackChanged", {
   group = vim.api.nvim_create_augroup("config.pack.build", { clear = true }),
   callback = function(ev)
-    local hook = build[ev.data.spec.name]
+    local hook = builds[ev.data.spec.name]
     if hook and (ev.data.kind == "install" or ev.data.kind == "update") then
       hook(ev.data.path)
     end
   end,
 })
 
-vim.pack.add({
-  -- Libraries
-  gh("nvim-lua/plenary.nvim"),
-  gh("MunifTanjim/nui.nvim"),
-  gh("nvim-tree/nvim-web-devicons"),
-  gh("kevinhwang91/promise-async"),
+---Install and load plugins with one vim.pack.add() call. Build hooks are
+---registered first, so they also run on the first install.
+---@param specs (string|PackSpec)[] "owner/name" shorthand or full specs
+function M.install(specs)
+  local add = {} ---@type vim.pack.Spec[]
+  for _, spec in ipairs(specs) do
+    spec = type(spec) == "string" and { src = spec } or spec
+    local src = spec.src:match("^https?://") and spec.src or ("https://github.com/" .. spec.src)
+    if spec.build then
+      builds[spec.name or (src:match("([^/]+)$"):gsub("%.git$", ""))] = spec.build
+    end
+    add[#add + 1] = { src = src, name = spec.name, version = spec.version }
+  end
+  if #add > 0 then
+    vim.pack.add(add, { confirm = false })
+  end
+end
 
-  -- LSP / tooling
-  gh("neovim/nvim-lspconfig"),
-  gh("mason-org/mason.nvim"),
-  gh("WhoIsSethDaniel/mason-tool-installer.nvim"),
-  { src = gh("nvim-treesitter/nvim-treesitter"), version = "main" },
-  gh("folke/lazydev.nvim"),
-  gh("kevinhwang91/nvim-ufo"),
-  gh("kosayoda/nvim-lightbulb"),
-  gh("nvimdev/lspsaga.nvim"),
+---Plugins no single setup module owns: libraries several modules depend on,
+---and vim-tmux-navigator, whose keymaps live in config/keymaps.lua because its
+---no-mappings flag must be set before its script is sourced.
+M.shared = {
+  "nvim-lua/plenary.nvim",
+  "MunifTanjim/nui.nvim",
+  "nvim-tree/nvim-web-devicons",
+  "nvim-neotest/nvim-nio",
+  "christoomey/vim-tmux-navigator",
+}
 
-  -- Completion
-  { src = gh("Saghen/blink.cmp"), version = vim.version.range("1") },
-  gh("Saghen/blink.compat"),
-  gh("rcarriga/cmp-dap"),
-  gh("rafamadriz/friendly-snippets"),
+-- Shared dependencies first, then every setup module's own specs
+-- (lua/plugins/*.lua, M.spec) in setup order.
+M.install(vim.list_extend(vim.list_extend({}, M.shared), require("plugins").specs()))
 
-  -- Format / lint
-  gh("stevearc/conform.nvim"),
-  gh("mfussenegger/nvim-lint"),
-
-  -- Debugging & tasks
-  gh("mfussenegger/nvim-dap"),
-  gh("rcarriga/nvim-dap-ui"),
-  gh("theHamsta/nvim-dap-virtual-text"),
-  gh("LiadOz/nvim-dap-repl-highlights"),
-  gh("nvim-neotest/nvim-nio"),
-  gh("mfussenegger/nvim-dap-python"),
-  gh("stevearc/overseer.nvim"),
-  gh("nvim-neotest/neotest"),
-
-  -- Git & AI
-  gh("lewis6991/gitsigns.nvim"),
-  gh("sindrets/diffview.nvim"),
-  gh("NeogitOrg/neogit"),
-  gh("akinsho/git-conflict.nvim"),
-  -- octo: pinned to the old-config commit — newer versions are bugged.
-  { src = gh("pwntester/octo.nvim"), version = "7566ab21843bf0de721f72891733c0372738d3ee" },
-  gh("zbirenbaum/copilot.lua"),
-  gh("folke/sidekick.nvim"),
-  gh("RayIci/agentdiff.nvim"),
-
-  -- Pickers / navigation
-  -- telescope on master: 0.1.x calls the removed vim.treesitter ft_to_lang API
-  -- on Neovim 0.12. (The old selection right-shift was a caret-width issue in
-  -- our config, not a telescope version problem — see plugins/telescope.lua.)
-  gh("nvim-telescope/telescope.nvim"),
-  gh("nvim-telescope/telescope-fzf-native.nvim"),
-  gh("nvim-telescope/telescope-ui-select.nvim"),
-  gh("folke/flash.nvim"),
-  gh("RRethy/vim-illuminate"),
-  gh("MagicDuck/grug-far.nvim"),
-  gh("christoomey/vim-tmux-navigator"),
-
-  -- UI
-  gh("folke/snacks.nvim"),
-  gh("folke/which-key.nvim"),
-  gh("folke/noice.nvim"),
-  gh("folke/trouble.nvim"),
-  gh("folke/todo-comments.nvim"),
-  gh("lukas-reineke/indent-blankline.nvim"),
-  gh("nvim-lualine/lualine.nvim"),
-  gh("akinsho/bufferline.nvim"),
-  -- Winbar breadcrumbs (VSCode-style symbol path at cursor)
-  gh("SmiteshP/nvim-navic"),
-  gh("utilyre/barbecue.nvim"),
-  gh("nvim-neo-tree/neo-tree.nvim"),
-  gh("stevearc/oil.nvim"),
-  gh("akinsho/toggleterm.nvim"),
-  gh("tiagovla/scope.nvim"),
-  gh("s1n7ax/nvim-window-picker"),
-  gh("MeanderingProgrammer/render-markdown.nvim"),
-  gh("rmagatti/auto-session"),
-
-  -- Editing
-  gh("kylechui/nvim-surround"),
-  gh("windwp/nvim-autopairs"),
-  gh("HiPhish/rainbow-delimiters.nvim"),
-  gh("NMAC427/guess-indent.nvim"),
-  gh("max397574/better-escape.nvim"),
-  { src = gh("jake-stewart/multicursor.nvim"), version = "1.0" },
-
-  -- Themes
-  { src = gh("catppuccin/nvim"), name = "catppuccin" },
-  gh("folke/tokyonight.nvim"),
-  gh("rebelot/kanagawa.nvim"),
-  gh("ellisonleao/gruvbox.nvim"),
-  { src = gh("rose-pine/neovim"), name = "rose-pine" },
-  gh("EdenEast/nightfox.nvim"),
-  gh("navarasu/onedark.nvim"),
-  gh("neanias/everforest-nvim"),
-  gh("shaunsingh/nord.nvim"),
-  gh("projekt0n/github-nvim-theme"),
-  gh("Mofiqul/dracula.nvim"),
-  gh("nyoom-engineering/oxocarbon.nvim"),
-  gh("sainnhe/sonokai"),
-  gh("bluz71/vim-nightfly-colors"),
-  gh("Shatur/neovim-ayu"),
-  gh("marko-cerovac/material.nvim"),
-  gh("scottmckendry/cyberdream.nvim"),
-  gh("zaldih/themery.nvim"),
-}, { confirm = false })
+return M

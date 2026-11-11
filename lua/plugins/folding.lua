@@ -2,6 +2,12 @@
 ---@class PluginFolding
 local M = {}
 
+---@type (string|PackSpec)[]
+M.spec = {
+  "kevinhwang91/nvim-ufo",
+  "kevinhwang91/promise-async",
+}
+
 local ft_provider = {
   git = "",
 }
@@ -60,11 +66,14 @@ local function fold_provider_chain(bufnr)
     return require("promise").reject(err)
   end
 
-  return require("ufo").getFolds(bufnr, "lsp"):catch(function(err)
-    return fallback(err, "treesitter")
-  end):catch(function(err)
-    return fallback(err, "indent")
-  end)
+  return require("ufo")
+    .getFolds(bufnr, "lsp")
+    :catch(function(err)
+      return fallback(err, "treesitter")
+    end)
+    :catch(function(err)
+      return fallback(err, "indent")
+    end)
 end
 
 function M.setup()

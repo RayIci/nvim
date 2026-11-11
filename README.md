@@ -50,13 +50,16 @@ nvim-dap, mason-tool-installer, and nvim-treesitter. Restart after adding a pack
 ```
 init.lua                  entry point (ordered requires)
 lua/config/options.lua    vim options
-lua/config/pack.lua       vim.pack plugin list + build hooks
+lua/config/pack.lua       the one vim.pack installer + shared libraries
 lua/config/keymaps.lua    global keymaps
 lua/config/autocmds.lua   global autocmds
 lua/config/prefs.lua      persisted preferences (JSON in stdpath state)
-lua/config/workspace.lua  plugin-free session/breakpoint/pin persistence
-lua/plugins/<name>.lua    one plugin per file: setup + its keymaps
+lua/config/state.lua      shared JSON state files + debounced, transition-aware saver
+lua/config/workspace/     per-project workspace persistence (buffers, breakpoints, pins, explorer, scope)
+lua/plugins/<name>.lua    one plugin per file: install spec (M.spec) + setup + its keymaps
+lua/plugins/init.lua      ordered list of plugin modules (setup order)
 lua/langs/<lang>.lua      drop-in language packs
+tests/                    headless checks (`nvim --headless -u NONE -l tests/<file>.lua`)
 ```
 
 ## Workspace persistence (plugin-free)
@@ -66,61 +69,94 @@ automatically when Neovim starts with no file arguments (buffers, layout, and bu
 pins — pins ride in the session via the `globals` sessionoption plus a post-restore
 re-sync). Neo-tree's expanded folders and open/closed state persist beside the session
 and are reapplied on restore. DAP breakpoints (line/condition/log) persist separately to
-`stdpath('state')` via the workspace module and reappear per file on open, session or not.
+`stdpath('state')` via the workspace package and reappear per file on open, session or not.
 
 Buffers, pins, breakpoints, and explorer state also save at mutation time (debounced),
-so they survive `:restart` without relying on exit hooks. The existing locations remain
-`stdpath('state')/workspaces/<cwd-key>.json` and `stdpath('state')/neotree/<cwd-key>.json`.
+so they survive `:restart` without relying on exit hooks. They live in
+`stdpath('state')/workspaces/<cwd-key>.json` (buffers, pins, breakpoints) and
+`stdpath('state')/neotree/<cwd-key>.json` (explorer); scope.nvim's per-tab buffer lists ride
+in the session file. `lua/config/workspace/` has one module per concern (`buffers`,
+`breakpoints`, `pins`, `explorer`, `scope`); `lua/plugins/auto-session.lua` only sets up
+auto-session with the package's session hooks. Both state files are written through
+`lua/config/state.lua`, which drops a pending write when the directory changes or a
+transition pauses persistence.
 Managed transitions flush the source snapshots and invalidate pending saves/restores
 before resetting editor state. Existing empty snapshots clear stale state; missing
 sidecars leave valid session-restored state alone.
 
 ## Git worktree workspaces
 
-`<leader>gww` switches the whole workspace in this Neovim instance; `<leader>gwc`
-creates a checkout and switches to it; `<leader>gwd` removes an inactive checkout.
-Neogit's status-buffer `w` opens the same managed menu. Branch selection uses Telescope;
-the destination input contains a real, editable absolute default.
+Worktrees are managed by [git-worktree.nvim](https://github.com/RayIci/git-worktree.nvim),
+wired by `lua/plugins/git-worktree.lua`. `<leader>gww` switches the whole workspace in this
+Neovim instance, `<leader>gwc` creates a checkout and switches to it, `<leader>gwd` removes
+an inactive one; Neogit's status-buffer `w` opens the same menu.
 
-For a main checkout `/work/client/backend` and branch `feature/login`, the suggested
-path is `/work/client/backend.worktrees/feature/login`. No parent folder name is special.
-Git's registered main checkout anchors this path even when creation starts from
-`backend.worktrees/another-branch`, a subdirectory, or an external linked checkout
-such as `/tmp/review-backend`. Branch slashes remain subdirectories. Absolute and `~/`
-overrides work; relative overrides resolve against the main checkout. Empty or occupied
-destinations (including symlinks) are rejected. Cancelling the prompts creates nothing.
-A usable non-bare main checkout is required; bare-only repositories are unsupported.
+New worktrees default to `<main-checkout>.worktrees/<branch>` (for `/work/client/backend`
+and `feature/login`: `/work/client/backend.worktrees/feature/login`), with an editable
+destination. Creation never fetches or copies `.env` files and dependencies; set those up
+per checkout.
 
-Choose a local branch, an available remote-tracking branch, or **Create new branch**.
-New branches start at the invoking checkout's HEAD. A remote selection drops only its
-remote prefix for the local name: an existing local counterpart is reused without a
-reset; otherwise a tracking branch is created. Creation never fetches, rebases, pushes,
-copies ignored files, or installs dependencies. Fetch refs explicitly when needed and
-set up `.env`, dependencies, and virtual environments separately in each checkout.
+A switch saves the outgoing session and this configuration's workspace state (the
+`config.workspace` participant: buffers, pins, breakpoints, neo-tree, scope), then
+restores the target's. Unsaved buffers must all be saved or the switch is cancelled (the
+default); live Neovim terminal jobs and debug sessions block it. External terminals, tmux,
+servers and AI agents keep their working directories. A broken target session puts you
+back in the source; see the plugin's README for every safeguard and the recovery rules.
+The enabled integrations are auto-session, Neogit, nvim-dap, scope, bufferline and
+neo-tree.
 
-Switching explicitly saves the outgoing session and sidecars (even with exit autosave
-off, preserving that preference), then replaces buffers, tabs, layout, pins, breakpoints,
-and explorer state with the target's saved state. A first visit starts with one clean
-buffer and a closed explorer unless target sidecars exist. Selecting the current
-checkout does nothing. Hidden and other-tab unsaved buffers must all be saved or the
-switch is cancelled; cancellation is the default. Unnamed/unwritable buffers, live
-Neovim terminal jobs, and active DAP sessions block switching rather than being
-discarded or stopped. External terminals, tmux, servers, and AI processes are untouched
-and retain their original working directories.
+`nvim --headless -u NONE -l tests/workspace.lua` runs the end-to-end suite against the
+installed plugins (`NVIM_WORKSPACE_TEST_GIT_WORKTREE=~/Github/git-worktree.nvim` tests a
+local checkout instead).
 
-If creation succeeds but switching is cancelled or fails, the checkout is retained and
-its path is reported. A failed destination restore attempts to recover the saved source
-session without overwriting the target. If recovery also fails, automatic writes stop
-and the error identifies the current cwd and recoverable source session.
+## Adding a plugin
 
-Deletion confirms the exact path and branch, refuses main/current/locked worktrees and
-all modified, staged, untracked, or ignored content, and never forces removal or deletes
-branches or saved editor state. The raw `:Neogit worktree` popup remains an **advanced
-Git-only interface**, not a full workspace switch. Use the managed keys or status `w`
-for session-aware switching; arbitrary `:cd` and external Git commands are not intercepted.
+Create `lua/plugins/<name>.lua` and list `<name>` in `lua/plugins/init.lua` where it should
+be set up. The module declares what to install and configures it:
 
-The focused regression runner uses disposable repositories and isolated editor state:
-`nvim --headless -u NONE -l tests/worktrees.lua` (requires the already-installed plugins).
+```lua
+local M = {}
+
+M.spec = {
+  "owner/plugin.nvim",                                   -- GitHub shorthand
+  { src = "owner/other.nvim", version = "v1.2.0" },      -- or a full spec (name, version, build)
+}
+
+function M.setup()
+  require("plugin").setup({})
+end
+
+return M
+```
+
+`lua/config/pack.lua` collects every module's `M.spec` (after the shared libraries) into one
+`vim.pack.add()` before any `setup()` runs, so modules must not `require` a plugin at the top
+level. `nvim --headless -u NONE -l tests/plugin-modules.lua` checks that. Language-pack
+plugins stay in their pack's `packs` field.
+
+## Themes
+
+`<leader>ut` opens the theme picker (themery); the selection persists. The default,
+`vale-night`/`vale-day`, comes from [vale.nvim](https://github.com/RayIci/vale.nvim), which
+also provides the theme studio: `:Vale` (or `<leader>uv`), `:Vale new <name>`,
+`:Vale edit <name>`. This configuration's own themes (`vale-starter`) live in `themes/`,
+with the loaders the studio generates in `colors/` and `lua/lualine/themes/`. Editing the
+bundled `vale` theme copies it into `themes/` first, so plugin updates never overwrite it.
+
+## Own plugins
+
+These live in their own repositories and are installed by vim.pack like any other plugin
+(pinned in `nvim-pack-lock.json`); this configuration only wires them up:
+
+| Plugin | Wired by |
+|---|---|
+| [agentdiff.nvim](https://github.com/RayIci/agentdiff.nvim) | `lua/plugins/agentdiff.lua` |
+| [commitsmith.nvim](https://github.com/RayIci/commitsmith.nvim) | `lua/plugins/commitsmith.lua` |
+| [git-worktree.nvim](https://github.com/RayIci/git-worktree.nvim) | `lua/plugins/git-worktree.lua` |
+| [vale.nvim](https://github.com/RayIci/vale.nvim) | `lua/plugins/vale.lua` |
+
+To try unpublished edits, start Neovim with the checkout first on `runtimepath`:
+`nvim --cmd 'set rtp^=~/Github/commitsmith.nvim'`.
 
 ## Plugin updates
 
@@ -149,9 +185,8 @@ to discard. `nvim-pack-lock.json` is committed; treat it like a lockfile.
 
 ### Commit messages
 
-Commit-message generation lives in `lua/commitsmith/` — a self-contained plugin kept in this
-repo for now, wired by `lua/plugins/commitsmith.lua`. Everything runs through
-`:Commitsmith <subcommand>`:
+Commit-message generation comes from [commitsmith.nvim](https://github.com/RayIci/commitsmith.nvim),
+wired by `lua/plugins/commitsmith.lua`. Everything runs through `:Commitsmith <subcommand>`:
 
 | Subcommand | What it does |
 |---|---|
@@ -175,12 +210,80 @@ instances stay in step. Lean mode is off by default; it drops the agent's tool s
 which is pure overhead when the diff is supplied inline. Note that `codex` emits no
 incremental output, so its replies arrive whole rather than streaming.
 
-Editing: multi-cursor `<C-n>` (skip with `q`), flash jump `s`, surround `ys/cs/ds`,
+Editing: multi-cursor `<C-n>` (skip with `q`), cursor above/below `<M-Up>`/`<M-Down>`,
+rotate cursors `<M-Left>`/`<M-Right>`, flash jump `s`, surround `ys/cs/ds`,
 references `]]`/`[[`, hunks `]h`/`[h`, inline AI (copilot.lua, sign in with
 `:Copilot auth`): accept line `<C-t>`, word `<C-w>`, all `<M-l>`, dismiss `<C-]>`,
 cycle `<M-]>`/`<M-[>` — `<C-w>` is a no-op without a suggestion, `<C-t>` falls back
 to its builtin (`<C-c>` acts as `<Esc>` so ghost text always clears).
 Escape insert with `jk`/`jj` (lag-free, insert-only — terminals unaffected).
 Save `<C-s>` (normal+insert), save without formatting `<C-a>`, clear search `<C-x>`/`<Esc>`, tmux-aware window
-navigation `<C-h/j/k/l>` (vim-tmux-navigator). Cmdline renders at the bottom row;
-macro recording shows a red `REC @reg` indicator in the statusline.
+navigation `<C-h/j/k/l>` (vim-tmux-navigator), window resize `<C-Up/Down/Left/Right>`.
+Cmdline renders at the bottom row; macro recording shows a red `REC @reg` indicator in
+the statusline.
+
+### Terminals and Alt+arrows
+
+The multicursor keys `<M-Up/Down/Left/Right>` only work if the terminal passes Alt+arrows
+on to Neovim. Some terminals use them for their own shortcuts; unbind those. Every snippet
+below is safe to paste even when nothing is bound.
+
+To check, press `<C-v>` in insert mode, then Alt+Up: `^[[1;3A` should appear as text. If
+nothing appears, or the terminal reacts instead, the key is still bound.
+
+**Windows Terminal** binds Alt+arrows to moving focus between its panes. Open Settings →
+*Open JSON file* and add these to the `"keybindings"` array:
+
+```json
+{ "id": null, "keys": "alt+up" },
+{ "id": null, "keys": "alt+down" },
+{ "id": null, "keys": "alt+left" },
+{ "id": null, "keys": "alt+right" }
+```
+
+On an older version with no `"keybindings"` array, add them to `"actions"` with
+`"command": "unbound"` in place of `"id": null`. Alt+Shift+arrows (resize pane) keep
+working.
+
+**tmux** binds Alt+arrows only after the prefix, so nothing is needed unless you added a
+`bind -n M-Up …` yourself (this repo's tmux config has none). To make sure, in
+`tmux.conf`:
+
+```tmux
+unbind -n M-Up
+unbind -n M-Down
+unbind -n M-Left
+unbind -n M-Right
+```
+
+**Ghostty** (macOS) binds Alt+Left/Right to word jumps. In `~/.config/ghostty/config`:
+
+```ini
+keybind = alt+left=unbind
+keybind = alt+right=unbind
+macos-option-as-alt = true
+```
+
+**kitty**, **WezTerm**, **Alacritty** and **GNOME Terminal** bind nothing to Alt+arrows on
+Linux. On macOS, make Option act as Alt:
+
+```conf
+# kitty.conf
+macos_option_as_alt yes
+```
+
+```toml
+# alacritty.toml
+[window]
+option_as_alt = "Both"
+```
+
+**Konsole**: in Settings → *Configure Keyboard Shortcuts*, search for `Alt+Up`, `Alt+Down`,
+`Alt+Left` and `Alt+Right`, and clear any shortcut using them.
+
+**iTerm2**: in Settings → Profiles → Keys → General, set *Left Option key* to `Esc+`. Under
+*Key Mappings*, delete any ⌥←, ⌥→, ⌥↑ or ⌥↓ entries (the *Natural Text Editing* preset
+adds ⌥← and ⌥→).
+
+**Terminal.app**: in Settings → Profiles → Keyboard, tick *Use Option as Meta key*, and
+delete any ⌥← or ⌥→ entries from the key list.

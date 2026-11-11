@@ -8,6 +8,11 @@
 ---@class PluginBetterEscape
 local M = {}
 
+---@type (string|PackSpec)[]
+M.spec = {
+  "max397574/better-escape.nvim",
+}
+
 function M.setup()
   require("better_escape").setup({
     timeout = vim.o.timeoutlen,

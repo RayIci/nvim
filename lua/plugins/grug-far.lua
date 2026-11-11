@@ -2,6 +2,11 @@
 ---@class PluginGrugFar
 local M = {}
 
+---@type (string|PackSpec)[]
+M.spec = {
+  "MagicDuck/grug-far.nvim",
+}
+
 function M.setup()
   require("grug-far").setup({
     hooks = {

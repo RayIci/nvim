@@ -2,6 +2,12 @@
 ---@class PluginNeotree
 local M = {}
 
+---@type (string|PackSpec)[]
+M.spec = {
+  "nvim-neo-tree/neo-tree.nvim",
+  "s1n7ax/nvim-window-picker",
+}
+
 -- IDE-style yellow for folder icons (survives theme switches, see below).
 -- A colorscheme can supply its own by defining a `FolderIcon` group (vale
 -- does; no third-party theme uses that name), which then wins.

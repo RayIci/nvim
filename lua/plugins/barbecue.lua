@@ -7,6 +7,12 @@
 ---@class PluginBarbecue
 local M = {}
 
+---@type (string|PackSpec)[]
+M.spec = {
+  "utilyre/barbecue.nvim",
+  "SmiteshP/nvim-navic",
+}
+
 -- Filetypes that must never show the breadcrumb (in addition to barbecue's
 -- buftype gate, which already excludes terminals/prompt/nofile from rendering).
 local exclude_filetypes = {

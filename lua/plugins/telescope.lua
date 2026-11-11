@@ -2,6 +2,19 @@
 ---@class PluginTelescope
 local M = {}
 
+---@type (string|PackSpec)[]
+M.spec = {
+  -- master: 0.1.x calls the removed vim.treesitter ft_to_lang API on Neovim 0.12.
+  "nvim-telescope/telescope.nvim",
+  {
+    src = "nvim-telescope/telescope-fzf-native.nvim",
+    build = function(path)
+      vim.system({ "make" }, { cwd = path }):wait()
+    end,
+  },
+  "nvim-telescope/telescope-ui-select.nvim",
+}
+
 -- Ignore lists ported from the old dotfiles config
 local find_ignore = { "node_modules/", "dist/", "build/", "%.git/", "vendor/" }
 local grep_ignore = {
