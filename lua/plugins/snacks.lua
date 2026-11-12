@@ -106,12 +106,17 @@ function M.setup()
     Snacks.notifier.hide()
   end, { desc = "Dismiss notifications" })
 
-  map("n", "]]", function()
-    Snacks.words.jump(vim.v.count1, true)
-  end, { desc = "Next reference" })
-  map("n", "[[", function()
-    Snacks.words.jump(-vim.v.count1, true)
-  end, { desc = "Previous reference" })
+  -- <M-n>/<M-p> are vim-illuminate's default keys from the old config.
+  for _, lhs in ipairs({ "]]", "<M-n>" }) do
+    map("n", lhs, function()
+      Snacks.words.jump(vim.v.count1, true)
+    end, { desc = "Next reference" })
+  end
+  for _, lhs in ipairs({ "[[", "<M-p>" }) do
+    map("n", lhs, function()
+      Snacks.words.jump(-vim.v.count1, true)
+    end, { desc = "Previous reference" })
+  end
 end
 
 return M

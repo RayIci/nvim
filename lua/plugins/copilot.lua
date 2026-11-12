@@ -42,16 +42,17 @@ function M.setup()
       debounce = 75,
       hide_during_completion = false, -- ghost text stays visible with blink's menu
       -- false: accept keys act ONLY on a visible suggestion and pass through to
-      -- their built-in behavior otherwise (<C-w> delete word, <C-t> indent).
-      -- true would consume the key to trigger a request, eating the keypress.
+      -- their built-in behavior otherwise. true would consume the key to
+      -- trigger a request, eating the keypress.
       trigger_on_accept = false,
       -- Old-config keys; copilot.lua falls back to the key's built-in behavior
-      -- when no suggestion is visible. accept_word is mapped directly below
-      -- instead (user never uses insert delete-word; no fallback wanted).
+      -- when no suggestion is visible. accept_word (<C-w>) and accept_line
+      -- (<C-t>) are mapped directly below instead: no delete-word or indent
+      -- fallback wanted.
       keymap = {
         accept = "<M-l>",
         accept_word = false,
-        accept_line = "<C-t>",
+        accept_line = false,
         next = "<M-]>",
         prev = "<M-[>",
         dismiss = "<C-]>",
@@ -61,11 +62,14 @@ function M.setup()
     filetypes = { markdown = true, yaml = true },
   })
 
-  -- Direct accept-word map, no passthrough: harmless no-op without a
-  -- suggestion (replaces Nvim's default i_CTRL-W delete-word, unused here).
+  -- Direct accept maps, no passthrough: harmless no-ops without a suggestion
+  -- (replace Nvim's default i_CTRL-W delete-word and i_CTRL-T indent, unused here).
   vim.keymap.set("i", "<C-w>", function()
     require("copilot.suggestion").accept_word()
   end, { desc = "Accept Copilot word" })
+  vim.keymap.set("i", "<C-t>", function()
+    require("copilot.suggestion").accept_line()
+  end, { desc = "Accept Copilot line" })
 
   vim.defer_fn(warn_if_signed_out, 2000)
 

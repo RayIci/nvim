@@ -3,9 +3,11 @@
 ---
 ---The plugin/LSP/UI stack is skipped: VS Code provides those. What is left is
 ---split three ways so that each key lives where it works best:
----  * <leader> (Space): VS Code's which-key menu (`whichkey.bindings` in the
----    VS Code settings.json). It mirrors the groups of plugins/whichkey.lua and
----    also works outside the editor (explorer, panels, lists).
+---  * <leader> (Space): VS Code's which-key menu, NOT this file. keybindings.json
+---    binds Space to `whichkey.show`, so Space never reaches Neovim; the menu is
+---    `whichkey.bindings` in %APPDATA%\Code\User\settings.json (section
+---    "which-key"; from WSL: /mnt/c/Users/<you>/AppData/Roaming/Code/User). It uses the keys of plugins/whichkey.lua's groups, trimmed to
+---    what VS Code can do, and also works outside the editor (explorer, panels, lists).
 ---  * <C-…> workbench keys (<C-h/j/k/l>, <C-t>, <C-s>, Copilot): VS Code's
 ---    keybindings.json, for the same reason.
 ---  * Printable-key mappings (this file): they must go through Neovim so counts,
@@ -34,6 +36,13 @@ map("n", "J", action("editor.action.moveLinesDownAction"), { desc = "Move line d
 map("n", "K", action("editor.action.moveLinesUpAction"), { desc = "Move line up" })
 map("x", "J", ":m '>+1<cr>gv", { silent = true, desc = "Move selection down" })
 map("x", "K", ":m '<-2<cr>gv", { silent = true, desc = "Move selection up" })
+
+-- Copilot <C-w> (accept word) and <C-t> (accept line) are VS Code keybindings
+-- that only fire while a suggestion is visible; otherwise the key reaches
+-- Neovim, whose built-ins would delete the word just accepted (i_CTRL-W) or
+-- indent the line (i_CTRL-T). Same as plugins/copilot.lua: no fallback.
+map("i", "<C-w>", "<Nop>", { desc = "Accept Copilot word (no fallback)" })
+map("i", "<C-t>", "<Nop>", { desc = "Accept Copilot line (no fallback)" })
 
 map("x", "<", "<gv", { desc = "Dedent selection" })
 map("x", ">", ">gv", { desc = "Indent selection" })
@@ -129,8 +138,10 @@ map("n", "[[", action("editor.action.wordHighlight.prev"), { desc = "Previous re
 -- ]t/[t: todo-comments is set up after neotest in plugins/init.lua, so TODOs win.
 map("n", "]t", action("todo-tree.goToNext"), { desc = "Next TODO" })
 map("n", "[t", action("todo-tree.goToPrevious"), { desc = "Previous TODO" })
+map("n", "]x", action("merge-conflict.next"), { desc = "Next conflict" })
+map("n", "[x", action("merge-conflict.previous"), { desc = "Previous conflict" })
 
--- Folds (plugins/folding.lua) ------------------------------------------------
+-- Folds (config/folds.lua) ---------------------------------------------------
 map("n", "zR", action("editor.unfoldAll"), { desc = "Open all folds" })
 map("n", "zM", action("editor.foldAll"), { desc = "Close all folds" })
 map("n", "za", action("editor.toggleFold"), { desc = "Toggle fold" })
