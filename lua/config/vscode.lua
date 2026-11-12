@@ -94,20 +94,46 @@ map("n", "<C-u>", half_page(-1), { desc = "Half page up (centered)" })
 map("x", "<C-d>", action("vscode-neovim.ctrl-d"), { desc = "Half page down" })
 map("x", "<C-u>", action("vscode-neovim.ctrl-u"), { desc = "Half page up" })
 
--- Window resize (<C-arrows>); in visual mode they add cursors, as multicursor.nvim does.
+-- Window resize (<C-arrows>).
 map("n", "<C-Up>", action("workbench.action.increaseViewHeight"), { desc = "Grow window height" })
 map("n", "<C-Down>", action("workbench.action.decreaseViewHeight"), { desc = "Shrink window height" })
 map("n", "<C-Left>", action("workbench.action.decreaseViewWidth"), { desc = "Shrink window width" })
 map("n", "<C-Right>", action("workbench.action.increaseViewWidth"), { desc = "Grow window width" })
-map("x", "<C-Up>", action("editor.action.insertCursorAbove"), { desc = "Multicursor: add above" })
-map("x", "<C-Down>", action("editor.action.insertCursorBelow"), { desc = "Multicursor: add below" })
 
--- Multicursor (plugins/visual-multi.lua): <C-n>/<C-p> add the next/previous match.
-map({ "n", "x" }, "<C-n>", action("editor.action.addSelectionToNextFindMatch"), {
-  desc = "Multicursor: add next match",
+-- Multicursor (same keys as plugins/visual-multi.lua) --------------------------
+-- VS Code holds the extra cursors, but Neovim only sees the main one, and any
+-- edit Neovim makes collapses VS Code back to a single cursor. So every key that
+-- adds cursors first switches to insert mode (vscode.with_insert keeps a visual
+-- selection as a VS Code selection): typing there is VS Code's and goes to every
+-- cursor. <Esc> returns to normal mode with one cursor.
+-- Repeated <C-n>/<C-p>/<M-Up>/<M-Down> presses in insert mode are VS Code
+-- keybindings (keybindings.json); <C-n>/<C-p>/<M-…> reach the maps below only
+-- because keybindings.json sends them to Neovim. <leader>ma / <leader>ms call
+-- M.* through the `vscode-neovim.lua` command (which-key in settings.json).
+local M = {}
+
+---@param name string VS Code command that adds cursors or selections
+---@return fun()
+local function in_insert(name)
+  return function()
+    vscode.with_insert(function()
+      vscode.action(name)
+    end)
+  end
+end
+
+M.add_next_match = in_insert("editor.action.addSelectionToNextFindMatch")
+M.add_prev_match = in_insert("editor.action.addSelectionToPreviousFindMatch")
+M.add_all_matches = in_insert("editor.action.selectHighlights")
+M.split_lines = in_insert("editor.action.insertCursorAtEndOfEachLineSelected")
+
+map({ "n", "x" }, "<C-n>", M.add_next_match, { desc = "Multicursor: add next match" })
+map({ "n", "x" }, "<C-p>", M.add_prev_match, { desc = "Multicursor: add prev match" })
+map({ "n", "x" }, "<M-Up>", in_insert("editor.action.insertCursorAbove"), {
+  desc = "Multicursor: add cursor above",
 })
-map({ "n", "x" }, "<C-p>", action("editor.action.addSelectionToPreviousFindMatch"), {
-  desc = "Multicursor: add prev match",
+map({ "n", "x" }, "<M-Down>", in_insert("editor.action.insertCursorBelow"), {
+  desc = "Multicursor: add cursor below",
 })
 
 -- Buffers (bufferline) -------------------------------------------------------
@@ -165,3 +191,5 @@ for _, plugin in ipairs({
     vim.notify(("vscode: %s not loaded: %s"):format(plugin.pack, err), vim.log.levels.WARN)
   end
 end
+
+return M
