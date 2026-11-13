@@ -176,6 +176,52 @@ map("n", "zo", action("editor.unfold"), { desc = "Open fold" })
 map("n", "zC", action("editor.foldRecursively"), { desc = "Close folds recursively" })
 map("n", "zO", action("editor.unfoldRecursively"), { desc = "Open folds recursively" })
 
+-- Open from a list in normal mode ---------------------------------------------
+-- Problems, search results, references, ... open the file with the problem/match
+-- range selected, and vscode-neovim turns any non-empty VS Code selection into
+-- visual mode. Moving through those lists previews the item the same way. So
+-- keybindings.json runs M.normal_after_jump after every open/move in Problems,
+-- Search, the References view and the peek widget (grr). The JS collapses that
+-- selection to its start; vscode-neovim then sees an empty selection and stays
+-- in (or returns to) normal mode.
+--   * The editor may not be open yet when this runs: wait up to 2 s for the
+--     selection (the first file after a window reload is slow to open).
+--   * vscode-neovim re-applies the old selection 20-450 ms after the first
+--     collapse, once or twice: keep collapsing until it's quiet for 0.8 s.
+--   * Opens report no selection kind (undefined), previews report Command: only
+--     clicks and typing are left alone.
+--   * Each call cancels the previous wait, so fast j/k don't pile up.
+local COLLAPSE_JUMP_SELECTION_JS = [[
+globalThis.__nvimCancelJumpWait?.();
+const K = vscode.TextEditorSelectionChangeKind;
+const collapse = (editor) => {
+  if (editor.selection.isEmpty && editor.selections.length === 1) { return false; }
+  const start = editor.selection.start;
+  editor.selection = new vscode.Selection(start, start);
+  return true;
+};
+await new Promise((resolve) => {
+  let timer = setTimeout(done, 2000);
+  const quiet = () => { clearTimeout(timer); timer = setTimeout(done, 800); };
+  const sub = vscode.window.onDidChangeTextEditorSelection((e) => {
+    if (e.kind !== K.Mouse && e.kind !== K.Keyboard && collapse(e.textEditor)) { quiet(); }
+  });
+  function done() {
+    clearTimeout(timer);
+    sub.dispose();
+    if (globalThis.__nvimCancelJumpWait === done) { globalThis.__nvimCancelJumpWait = undefined; }
+    resolve();
+  }
+  globalThis.__nvimCancelJumpWait = done;
+  const now = vscode.window.activeTextEditor;
+  if (now && collapse(now)) { quiet(); }
+});
+]]
+
+function M.normal_after_jump()
+  vscode.eval_async(COLLAPSE_JUMP_SELECTION_JS)
+end
+
 -- Text-only plugins that work under vscode-neovim ---------------------------
 -- Same modules as the full config, so their keymaps stay defined in one place.
 -- packadd finds them where vim.pack installed them (site/pack/core/opt).
