@@ -125,6 +125,10 @@ keys, folder colours and quitting.
   you type, and an `<Esc>` without edits doesn't restart a slow linter such as mypy.
   `<leader>ud` only changes whether diagnostics refresh while typing.
   `nvim --headless -u NONE -l tests/lint.lua` tests the triggers.
+  Linter diagnostics sent back to LSP servers (e.g. in the lightbulb's code-action
+  requests) are completed with their range and message first, since nvim-lint stores only
+  a partial LSP diagnostic and strict servers like ruff reject it
+  (`lua/plugins/lsp-diagnostic-fix.lua`, `tests/lsp-diagnostic-fix.lua`).
 - **Display toggles** are remembered across restarts in `stdpath("state")/prefs.json`: rainbow
   brackets `<leader>ur`, breadcrumbs `<leader>ub`, the code-action lightbulb `<leader>ul`,
   inlay hints `<leader>li`, code lenses `<leader>lct` (`tests/toggles.lua`).

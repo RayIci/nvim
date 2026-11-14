@@ -15,6 +15,7 @@ M.modules = {
   "lightbulb",
   "blink",
   "lsp-markdown-fix",
+  "lsp-diagnostic-fix",
   "render-markdown",
   "conform",
   "lint",
