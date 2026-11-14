@@ -117,6 +117,10 @@ keys, folder colours and quitting.
   Tree-sitter, otherwise indentation (`lua/config/folds.lua`). Files open unfolded;
   `zR`/`zM`/`zr`/`zm`/`za` are the built-in commands and `zU` closes the child folds of the
   fold under the cursor. `nvim --headless -u NONE -l tests/folds.lua` tests it.
+- **Gutter** (`lua/config/statuscolumn.lua`): every kind of sign has its own column, so none
+  hides another: `[breakpoint][diagnostic][lightbulb] number [git][fold]`. Errors from several
+  sources (basedpyright and mypy) show as one icon, the most severe; signs from other plugins
+  share the breakpoint column. `nvim --headless -u NONE -l tests/statuscolumn.lua` tests it.
 - **Breadcrumbs** (`Class › Method` of the cursor) sit in the statusline next to the file
   name for buffers with a document-symbol server, updated when the cursor rests
   (`lua/plugins/breadcrumbs.lua`; `<leader>ub` toggles).

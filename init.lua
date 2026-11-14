@@ -17,6 +17,7 @@ require("config.clipboard") -- after plugins so its startup notify renders via n
 require("langs").setup()
 require("config.keymaps")
 require("config.folds").setup()
+require("config.statuscolumn").setup()
 require("config.leader_doctor").setup()
 require("config.autocmds")
 require("config.workspace").setup()

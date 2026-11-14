@@ -165,12 +165,14 @@ function M.setup()
     update_in_insert = require("config.prefs").get("diagnostics_live", false),
     virtual_text = { source = "if_many", spacing = 2 },
     float = { border = "rounded", source = "if_many" },
+    -- Nerd Font glyphs as escapes (raw glyphs were once lost as spaces):
+    -- fa-times-circle, fa-exclamation-triangle, fa-info-circle, fa-comment.
     signs = {
       text = {
-        [vim.diagnostic.severity.ERROR] = " ",
-        [vim.diagnostic.severity.WARN] = " ",
-        [vim.diagnostic.severity.INFO] = " ",
-        [vim.diagnostic.severity.HINT] = " ",
+        [vim.diagnostic.severity.ERROR] = "\u{f057}",
+        [vim.diagnostic.severity.WARN] = "\u{f071}",
+        [vim.diagnostic.severity.INFO] = "\u{f05a}",
+        [vim.diagnostic.severity.HINT] = "\u{f075}",
       },
     },
   })
