@@ -222,6 +222,85 @@ function M.normal_after_jump()
   vscode.eval_async(COLLAPSE_JUMP_SELECTION_JS)
 end
 
+-- Merge editor <C-h>/<C-l> ---------------------------------------------------
+-- The merge editor (mixed layout: Incoming | Current on top, Result below) is
+-- one editor in one group, so navigateLeft/Right jump straight out of it, and
+-- no context key tells Incoming from Current. keybindings.json calls
+-- M.merge_nav through the `vscode-neovim.lua` command; the JS finds the focused
+-- pane by comparing the active text editor with the URIs of the active merge
+-- tab (TabInputTextMerge), which works for any merge, not just Git's.
+--   Incoming: <C-h> sidebar,  <C-l> Current
+--   Current:  <C-h> Incoming, <C-l> Copilot bar (auxiliary bar)
+--   Base:     <C-h> Incoming, <C-l> Current
+--   Result:   <C-h> sidebar,  <C-l> Copilot bar
+-- mergeEditor.toggleBetweenInputs focuses Incoming, or Current when Incoming
+-- already has focus; there is no command to focus a given pane. Leaving uses
+-- focusSideBar / focusAuxiliaryBar: navigateLeft/Right didn't get out of
+-- Result. <C-j>/<C-k> between the top panes and Result are plain keybindings.
+local MERGE_NAV_JS = [[
+const run = async (...ids) => { for (const id of ids) { await vscode.commands.executeCommand(id); } };
+const left = args.dir === 'left';
+const merge = vscode.window.tabGroups.activeTabGroup.activeTab?.input;
+const doc = vscode.window.activeTextEditor?.document.uri.toString();
+if (!(merge instanceof vscode.TabInputTextMerge) || !doc) {
+  return run(left ? 'workbench.action.navigateLeft' : 'workbench.action.navigateRight');
+}
+const TOGGLE = 'mergeEditor.toggleBetweenInputs';
+const OUT = left ? 'workbench.action.focusSideBar' : 'workbench.action.focusAuxiliaryBar';
+const focused = (uri) => uri !== undefined && uri.toString() === doc;
+if (focused(merge.input1)) { return left ? run(OUT) : run(TOGGLE); }
+if (focused(merge.input2)) { return left ? run(TOGGLE) : run(OUT); }
+if (focused(merge.base)) { return left ? run(TOGGLE) : run(TOGGLE, TOGGLE); }
+return run(OUT);
+]]
+
+---@param dir "left"|"right"
+function M.merge_nav(dir)
+  vscode.eval_async(MERGE_NAV_JS, { args = { dir = dir } })
+end
+
+-- SCM commit box <C-j> ---------------------------------------------------------
+-- keybindings.json: <C-j> in the commit box goes down to the changes list
+-- (workbench.scm.action.focusNextResourceGroup). In a clean repo there is no
+-- resource group, so that command silently does nothing, and no context key
+-- says whether a repo has changes. With changes, focus the list; clean, go on
+-- to the Graph (`graph`: keybindings.json passes whether it's expanded,
+-- view.workbench.scm.history.visible) or down to the panel.
+-- The check is `git status` run here, not the Git extension API: with
+-- vscode-neovim.useWSL, vscode-neovim (and eval'd JS) runs in the Windows
+-- extension host while the Git extension runs in WSL, out of reach. Neovim
+-- itself runs in WSL, next to git and the repo. Only the workspace folder
+-- paths come from VS Code. Anything that isn't a clean Git repo (error, not a
+-- repo, Windows path) counts as "has changes": the plain command, as before.
+local SCM_FOCUS_CHANGES = "workbench.scm.action.focusNextResourceGroup"
+
+---@param graph boolean the Graph section is expanded
+function M.scm_down(graph)
+  local folders = vscode.eval("return (vscode.workspace.workspaceFolders ?? []).map((f) => f.uri.path)") or {}
+  if #folders == 0 then
+    return vscode.action(SCM_FOCUS_CHANGES)
+  end
+  local pending, dirty = #folders, false
+  local function done(has_changes)
+    dirty = dirty or has_changes
+    pending = pending - 1
+    if pending == 0 then
+      vim.schedule(function()
+        local clean_target = graph and "workbench.scm.history.focus" or "workbench.action.navigateDown"
+        vscode.action(dirty and SCM_FOCUS_CHANGES or clean_target)
+      end)
+    end
+  end
+  for _, path in ipairs(folders) do
+    local ok = pcall(vim.system, { "git", "-C", path, "status", "--porcelain", "--ignore-submodules" }, { text = true }, function(r)
+      done(r.code ~= 0 or (r.stdout or "") ~= "")
+    end)
+    if not ok then
+      done(true)
+    end
+  end
+end
+
 -- Text-only plugins that work under vscode-neovim ---------------------------
 -- Same modules as the full config, so their keymaps stay defined in one place.
 -- packadd finds them where vim.pack installed them (site/pack/core/opt).
