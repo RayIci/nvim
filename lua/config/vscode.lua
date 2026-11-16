@@ -9,7 +9,11 @@
 ---    "which-key"; from WSL: /mnt/c/Users/<you>/AppData/Roaming/Code/User). It uses the keys of plugins/whichkey.lua's groups, trimmed to
 ---    what VS Code can do, and also works outside the editor (explorer, panels, lists).
 ---  * <C-…> workbench keys (<C-h/j/k/l>, <C-t>, <C-s>, Copilot): VS Code's
----    keybindings.json, for the same reason.
+---    keybindings.json, for the same reason. Its <C-j>/<C-k> rules between the
+---    sections of a sidebar (Changes / Graph, Variables / Watch, extensions'
+---    sections, ...) are a generated block: edit and re-run
+---    scripts/vscode_sections.py, not the block (re-run it after installing an
+---    extension or updating VS Code too).
 ---  * Printable-key mappings (this file): they must go through Neovim so counts,
 ---    pending operators and f/t/r targets keep working.
 local vscode = require("vscode")
