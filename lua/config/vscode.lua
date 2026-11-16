@@ -98,11 +98,8 @@ map("n", "<C-u>", half_page(-1), { desc = "Half page up (centered)" })
 map("x", "<C-d>", action("vscode-neovim.ctrl-d"), { desc = "Half page down" })
 map("x", "<C-u>", action("vscode-neovim.ctrl-u"), { desc = "Half page up" })
 
--- Window resize (<C-arrows>).
-map("n", "<C-Up>", action("workbench.action.increaseViewHeight"), { desc = "Grow window height" })
-map("n", "<C-Down>", action("workbench.action.decreaseViewHeight"), { desc = "Shrink window height" })
-map("n", "<C-Left>", action("workbench.action.decreaseViewWidth"), { desc = "Shrink window width" })
-map("n", "<C-Right>", action("workbench.action.increaseViewWidth"), { desc = "Grow window width" })
+-- Window resize is Ctrl+Alt+arrows in keybindings.json (works in text boxes and
+-- the terminal too), not <C-arrows> here.
 
 -- Multicursor (same keys as plugins/visual-multi.lua) --------------------------
 -- VS Code holds the extra cursors, but Neovim only sees the main one, and any
@@ -112,7 +109,7 @@ map("n", "<C-Right>", action("workbench.action.increaseViewWidth"), { desc = "Gr
 -- cursor. <Esc> returns to normal mode with one cursor.
 -- Repeated <C-n>/<C-p>/<M-Up>/<M-Down> presses in insert mode are VS Code
 -- keybindings (keybindings.json); <C-n>/<C-p>/<M-…> reach the maps below only
--- because keybindings.json sends them to Neovim. <leader>ma / <leader>ms call
+-- because keybindings.json sends them to Neovim. <leader>Ma / <leader>Ms call
 -- M.* through the `vscode-neovim.lua` command (which-key in settings.json).
 local M = {}
 
@@ -165,9 +162,13 @@ map("n", "]h", action("workbench.action.editor.nextChange"), { desc = "Next hunk
 map("n", "[h", action("workbench.action.editor.previousChange"), { desc = "Previous hunk" })
 map("n", "]]", action("editor.action.wordHighlight.next"), { desc = "Next reference" })
 map("n", "[[", action("editor.action.wordHighlight.prev"), { desc = "Previous reference" })
--- ]t/[t: todo-comments is set up after neotest in plugins/init.lua, so TODOs win.
-map("n", "]t", action("todo-tree.goToNext"), { desc = "Next TODO" })
-map("n", "[t", action("todo-tree.goToPrevious"), { desc = "Previous TODO" })
+-- ]T/[T as in plugins/neotest.lua. No ]t/[t: Todo Tree isn't installed.
+map("n", "]T", action("testing.goToNextMessage"), { desc = "Next failed test" })
+map("n", "[T", action("testing.goToPreviousMessage"), { desc = "Previous failed test" })
+-- Bookmarks extension (rest of it: <leader>m in which-key). Replaces Vim's
+-- ]m / [m method jumps, which rarely help in VS Code.
+map("n", "]m", action("bookmarks.jumpToNext"), { desc = "Next bookmark" })
+map("n", "[m", action("bookmarks.jumpToPrevious"), { desc = "Previous bookmark" })
 map("n", "]x", action("merge-conflict.next"), { desc = "Next conflict" })
 map("n", "[x", action("merge-conflict.previous"), { desc = "Previous conflict" })
 
