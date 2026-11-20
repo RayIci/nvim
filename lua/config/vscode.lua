@@ -264,6 +264,193 @@ function M.merge_nav(dir)
   vscode.eval_async(MERGE_NAV_JS, { args = { dir = dir } })
 end
 
+-- File explorer: Y path picker and v visual mode ------------------------------
+-- Commands run from a keybinding get no URI, and eval'd JS can't read the
+-- explorer's focus or selection. The built-in copyFilePath does: it copies the
+-- whole selection when the cursor is on a selected item, otherwise just the
+-- item under the cursor. explorerPaths() lets it fill the clipboard, reads
+-- the path(s) back and puts the old clipboard back.
+-- Any OS, local or remote (SSH, Dev Containers, WSL window):
+--   * Path style comes from the path itself (drive letter / UNC = Windows: `\`,
+--     case-insensitive), not from the OS this JS runs on: vscode-neovim is a UI
+--     extension, so in a remote window it runs locally while paths are remote.
+--   * toUri() reuses the remote workspace's scheme + authority
+--     (vscode-remote://ssh-remote+host/...), so stat, relative path, reveal
+--     and URI are right remotely too.
+local EXPLORER_JS = [[
+const clip = vscode.env.clipboard;
+const explorerPaths = async () => {
+  const before = await clip.readText();
+  await clip.writeText(''); // so an empty clipboard afterwards means copyFilePath found nothing
+  await vscode.commands.executeCommand('copyFilePath');
+  const paths = (await clip.readText()).split(/\r?\n/).filter((p) => p !== '');
+  await clip.writeText(before);
+  return paths;
+};
+// Remote window: the scheme + authority every item URI must carry.
+const remoteBase = vscode.env.remoteName
+  ? ((vscode.workspace.workspaceFolders ?? []).map((f) => f.uri)
+      .concat(vscode.window.activeTextEditor?.document.uri ?? [])
+      .find((u) => u.scheme !== 'file' && u.scheme !== 'untitled'))
+  : undefined;
+const isWinPath = (p) => /^([a-zA-Z]:[\\/]|\\\\)/.test(p);
+const toUri = (abs) => {
+  if (!remoteBase) { return vscode.Uri.file(abs); }
+  const path = isWinPath(abs) ? '/' + abs.replaceAll('\\', '/') : abs;
+  return remoteBase.with({ path, query: '', fragment: '' });
+};
+// Visual mode off: status item + auto-exit listeners (set up by VISUAL_ON_JS)
+// and the nvimExplorerVisual context key the keybindings test.
+const leaveVisual = async () => {
+  globalThis.__nvimExplorerVisual?.dispose();
+  globalThis.__nvimExplorerVisual = undefined;
+  await vscode.commands.executeCommand('setContext', 'nvimExplorerVisual', false);
+};
+]]
+
+-- Y: copy path picker. Like neo-tree / nvim-tree's copy selector: asks which
+-- form of the path to copy (name, stem, extension, relative, ~, absolute, ...).
+-- Several selected items: each one is converted, one per line.
+--   * Options that don't apply are hidden (no extension on folders, no
+--     relative path outside the workspace, no ~ outside the home folder), and
+--     so are options that would copy the same text as one above them
+--     (forward slashes on Linux/macOS, relative path of a top-level item).
+--   * ~ : locally the real home (%USERPROFILE% / $HOME). Remotely the home
+--     isn't exposed to a UI extension, so it's inferred from the path
+--     (/home/<user>, /Users/<user>, /root, X:\Users\<user>).
+--   * args.leave_visual (Y in visual mode): leave visual mode first, clearing
+--     the selection, so the picker isn't racing the keybinding.
+local COPY_PATH_JS = EXPLORER_JS .. [[
+const paths = await explorerPaths();
+if (args?.leave_visual) {
+  // list.clear keeps the cursor only when more than one item is selected
+  if (paths.length > 1) { await vscode.commands.executeCommand('list.clear'); }
+  await leaveVisual();
+}
+if (paths.length === 0) { return; }
+const localHome = process.env.USERPROFILE || process.env.HOME || '';
+const homeOf = (abs) => {
+  if (!remoteBase) { return localHome; }
+  const m = abs.match(/^(\/home\/[^/]+|\/Users\/[^/]+|\/root)(?=\/|$)/) ?? abs.match(/^[a-zA-Z]:\\Users\\[^\\]+/i);
+  return m ? m[0] : '';
+};
+const isDir = async (uri) => {
+  try { return (await vscode.workspace.fs.stat(uri)).type & vscode.FileType.Directory; }
+  catch { return false; }
+};
+const info = await Promise.all(paths.map(async (abs) => {
+  const win = isWinPath(abs);
+  const sep = win ? '\\' : '/';
+  // case-insensitive: Windows paths, and local macOS (default APFS)
+  const ci = win || (!remoteBase && process.platform === 'darwin');
+  const uri = toUri(abs);
+  const cut = abs.lastIndexOf(sep);
+  const name = abs.slice(cut + 1);
+  const dot = name.lastIndexOf('.');
+  const dir = await isDir(uri);
+  const home = homeOf(abs);
+  const under = (p, root) => (ci ? p.toLowerCase().startsWith(root.toLowerCase() + sep) : p.startsWith(root + sep));
+  return {
+    abs,
+    uri,
+    name,
+    stem: !dir && dot > 0 ? name.slice(0, dot) : name,
+    ext: !dir && dot > 0 ? name.slice(dot + 1) : '',
+    parent: cut > 0 ? abs.slice(0, cut) : cut === 0 ? sep : '',
+    fromHome: home && under(abs, home) ? '~' + abs.slice(home.length) : '',
+  };
+}));
+const forms = [
+  ['Filename', (f) => f.name],
+  ['Name without extension', (f) => f.stem],
+  ['Extension', (f) => f.ext],
+  // only inside a workspace folder (outside it asRelativePath returns the absolute path)
+  ['Relative path', (f) => (vscode.workspace.getWorkspaceFolder(f.uri) ? vscode.workspace.asRelativePath(f.uri, false) : '')],
+  ['Path from home', (f) => f.fromHome],
+  ['Absolute path', (f) => f.abs],
+  ['Absolute path (forward slashes)', (f) => f.abs.replaceAll('\\', '/')],
+  ['Parent folder', (f) => f.parent],
+  ['URI', (f) => f.uri.toString()],
+];
+const seen = new Set();
+const items = forms
+  .map(([label, fn]) => ({ label, values: info.map(fn) }))
+  .filter((it) => it.values.every((v) => v !== ''))
+  .filter((it) => {
+    const key = it.values.join('\n');
+    if (seen.has(key)) { return false; }
+    seen.add(key);
+    return true;
+  })
+  .map((it) => ({
+    ...it,
+    description: it.values[0] + (it.values.length > 1 ? `  (+${it.values.length - 1} more)` : ''),
+  }));
+const pick = await vscode.window.showQuickPick(items, {
+  title: paths.length > 1 ? `Copy path (${paths.length} items)` : 'Copy path',
+  placeHolder: 'Which part of the path?',
+  matchOnDescription: true,
+});
+if (!pick) { return; }
+const text = pick.values.join('\n');
+await clip.writeText(text);
+vscode.window.setStatusBarMessage(`Copied: ${text.split('\n')[0]}${pick.values.length > 1 ? ' ...' : ''}`, 3000);
+]]
+
+---@param leave_visual? boolean also leave explorer visual mode (Y in visual mode)
+function M.copy_path_picker(leave_visual)
+  vscode.eval_async(COPY_PATH_JS, { args = { leave_visual = leave_visual == true } })
+end
+
+-- v: visual mode. Like V in a buffer: v starts a range on the item under the
+-- cursor, j/k grow / shrink it, y/x/d/Y act on all of it and leave, Esc/v
+-- leave. The keybindings (keybindings.json, FILE EXPLORER) do the moving and
+-- acting; this only switches the mode on and off.
+--   * j/k are list.expandSelectionDown/Up: stepping onto an unselected item
+--     adds it, stepping back onto a selected one drops the item you left. From
+--     a single selected item that's exactly a range anchored where v was hit.
+--   * So v must leave exactly that one item selected, whatever was selected
+--     before (usually the open file). revealInExplorer does that (focus +
+--     selection = the item), but needs its path: explorerPaths() returns just
+--     the cursor's item unless the cursor is on a multi-selection; then
+--     list.toggleSelection drops it from the selection and it's read alone.
+--   * The mode is the nvimExplorerVisual context key plus a "-- VISUAL --"
+--     status bar item. Nothing tells an extension that the explorer lost focus,
+--     so the mode also ends by itself when the active editor changes or an
+--     editor's cursor moves (you opened a file or went back to the code).
+local VISUAL_ON_JS = EXPLORER_JS .. [[
+await leaveVisual(); // leftover from an earlier run
+let paths = await explorerPaths();
+if (paths.length > 1) {
+  await vscode.commands.executeCommand('list.toggleSelection');
+  paths = await explorerPaths();
+}
+if (paths.length !== 1) { return; }
+await vscode.commands.executeCommand('revealInExplorer', toUri(paths[0]));
+await vscode.commands.executeCommand('setContext', 'nvimExplorerVisual', true);
+const item = vscode.window.createStatusBarItem('nvimExplorerVisual', vscode.StatusBarAlignment.Left, 10000);
+item.name = 'Explorer visual mode';
+item.text = '-- VISUAL --';
+item.tooltip = 'Explorer visual mode: j/k extend, y/x/d/Y act on the selection, Esc or v leaves';
+item.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground');
+item.show();
+const subs = [
+  item,
+  vscode.window.onDidChangeActiveTextEditor(() => leaveVisual()),
+  vscode.window.onDidChangeTextEditorSelection(() => leaveVisual()),
+];
+globalThis.__nvimExplorerVisual = { dispose: () => subs.forEach((d) => d.dispose()) };
+]]
+
+local VISUAL_OFF_JS = EXPLORER_JS .. [[
+await leaveVisual();
+]]
+
+---@param on boolean
+function M.explorer_visual(on)
+  vscode.eval_async(on and VISUAL_ON_JS or VISUAL_OFF_JS)
+end
+
 -- SCM commit box <C-j> ---------------------------------------------------------
 -- keybindings.json: <C-j> in the commit box goes down to the changes list
 -- (workbench.scm.action.focusNextResourceGroup). In a clean repo there is no
